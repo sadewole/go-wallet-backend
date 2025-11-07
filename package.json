@@ -20,9 +20,13 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.0.2",
     "@nestjs/common": "^10.0.0",
+    "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^10.0.0",
     "@nestjs/platform-express": "^10.0.0",
+    "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.44.7",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1"
   },
@@ -36,6 +40,7 @@
     "@types/supertest": "^6.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
+    "drizzle-kit": "^0.31.6",
     "eslint": "^8.42.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
@@ -47,6 +52,7 @@
     "ts-loader": "^9.4.3",
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.20.6",
     "typescript": "^5.1.3"
   },
   "jest": {
