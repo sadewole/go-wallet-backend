@@ -1,8 +1,6 @@
-import * as userSchema from '../../users/schema';
+import * as schemas from 'src/core/schemas';
 
 export const DATABASE_CONNECTION = 'database-connection';
 
-export const schemas = {
-  ...userSchema,
-};
+export { schemas };
 export type DatabaseSchema = typeof schemas;

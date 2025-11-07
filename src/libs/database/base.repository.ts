@@ -1,15 +1,21 @@
 import { Inject, Logger } from '@nestjs/common';
-import { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { NeonHttpDatabase } from 'drizzle-orm/neon-http';
 import { AnyPgTable } from 'drizzle-orm/pg-core';
 import { count, eq, SQL } from 'drizzle-orm';
-import { DATABASE_CONNECTION, DatabaseSchema } from './constant';
+import { DATABASE_CONNECTION, DatabaseSchema, schemas } from './constant';
+
+// Helper types for better TypeScript support
+export type SelectType<TTableName extends keyof DatabaseSchema> =
+  DatabaseSchema[TTableName]['$inferSelect'];
+export type InsertType<TTableName extends keyof DatabaseSchema> =
+  DatabaseSchema[TTableName]['$inferInsert'];
 
 export class BaseRepository<TTableName extends keyof DatabaseSchema> {
   protected readonly logger: Logger;
 
   constructor(
     @Inject(DATABASE_CONNECTION)
-    protected readonly database: NodePgDatabase<DatabaseSchema>,
+    protected readonly database: NeonHttpDatabase<DatabaseSchema>,
     protected readonly tableName: TTableName,
     logger?: Logger,
   ) {
@@ -19,24 +25,28 @@ export class BaseRepository<TTableName extends keyof DatabaseSchema> {
   // Relational query methods
   findMany(
     options?: Parameters<
-      NodePgDatabase<DatabaseSchema>['query'][TTableName]['findMany']
+      NeonHttpDatabase<DatabaseSchema>['query'][TTableName]['findMany']
     >[0],
   ) {
-    return this.database.query[this.tableName].findMany(options);
+    return this.database.query[this.tableName].findMany(options) as Promise<
+      SelectType<TTableName>[]
+    >;
   }
 
   findFirst(
     options?: Parameters<
-      NodePgDatabase<DatabaseSchema>['query'][TTableName]['findFirst']
+      NeonHttpDatabase<DatabaseSchema>['query'][TTableName]['findFirst']
     >[0],
   ) {
-    return this.database.query[this.tableName].findFirst(options);
+    return this.database.query[this.tableName].findFirst(options) as Promise<
+      SelectType<TTableName> | undefined
+    >;
   }
 
   // Alias for findFirst for convenience
   findOne(
     options?: Parameters<
-      NodePgDatabase<DatabaseSchema>['query'][TTableName]['findFirst']
+      NeonHttpDatabase<DatabaseSchema>['query'][TTableName]['findFirst']
     >[0],
   ) {
     return this.findFirst(options);
@@ -44,44 +54,41 @@ export class BaseRepository<TTableName extends keyof DatabaseSchema> {
 
   // Traditional Drizzle methods for complex queries
   get table() {
-    return this.database._.schema[this.tableName] as unknown as AnyPgTable;
+    return schemas[this.tableName];
   }
 
-  async create(data: DatabaseSchema[TTableName]['$inferInsert']) {
-    const [result] = await this.database
+  async create(data: Omit<InsertType<TTableName>, 'id'>) {
+    const result = await this.database
       .insert(this.table)
-      .values(data)
+      .values(data as any)
       .returning();
-    return result;
+    return result[0] as SelectType<TTableName>;
   }
 
-  async createMany(data: DatabaseSchema[TTableName]['$inferInsert'][]) {
+  async createMany(data: Omit<InsertType<TTableName>, 'id'>[]) {
     return await this.database
       .insert(this.table)
       .values(data as any)
       .returning();
   }
 
-  async update(
-    id: number | string,
-    data: Partial<DatabaseSchema[TTableName]['$inferInsert']>,
-  ) {
+  async update(id: number | string, data: Partial<InsertType<TTableName>>) {
     const idColumn = (this.table as any).id;
     if (!idColumn) {
       throw new Error(`Table ${this.tableName} does not have an 'id' column`);
     }
 
-    const [result] = await this.database
+    const result = await this.database
       .update(this.table)
       .set(data as any)
       .where(eq(idColumn, id))
       .returning();
-    return result;
+    return result[0] as SelectType<TTableName>;
   }
 
   async updateMany(
     conditions: SQL | undefined,
-    data: Partial<DatabaseSchema[TTableName]['$inferInsert']>,
+    data: Partial<InsertType<TTableName>>,
   ) {
     return await this.database
       .update(this.table)
@@ -96,11 +103,11 @@ export class BaseRepository<TTableName extends keyof DatabaseSchema> {
       throw new Error(`Table ${this.tableName} does not have an 'id' column`);
     }
 
-    const [result] = await this.database
+    const result = await this.database
       .delete(this.table)
       .where(eq(idColumn, id))
       .returning();
-    return result;
+    return result[0] as SelectType<TTableName>;
   }
 
   async deleteMany(conditions: SQL | undefined) {
@@ -111,7 +118,7 @@ export class BaseRepository<TTableName extends keyof DatabaseSchema> {
   async count(options?: { where?: any }): Promise<number> {
     const result = await this.database
       .select({ count: count() })
-      .from(this.table)
+      .from(this.table as AnyPgTable)
       .where(options?.where);
     return result[0]?.count || 0;
   }
@@ -157,6 +164,6 @@ export class BaseRepository<TTableName extends keyof DatabaseSchema> {
 
   // Get the query builder for this table
   get query() {
-    return this.database.select().from(this.table);
+    return this.database.select().from(this.table as AnyPgTable);
   }
 }

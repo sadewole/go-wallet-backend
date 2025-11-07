@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { NeonHttpDatabase } from 'drizzle-orm/neon-http';
 import { DATABASE_CONNECTION, DatabaseSchema } from './constant';
 import { BaseRepository } from './base.repository';
 
@@ -7,7 +7,7 @@ import { BaseRepository } from './base.repository';
 export class RepositoryFactory {
   constructor(
     @Inject(DATABASE_CONNECTION)
-    private readonly database: NodePgDatabase<DatabaseSchema>,
+    private readonly database: NeonHttpDatabase<DatabaseSchema>,
   ) {}
 
   create<TTableName extends keyof DatabaseSchema>(
