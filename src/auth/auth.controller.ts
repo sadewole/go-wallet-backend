@@ -17,7 +17,12 @@ import {
   VerifyEmailDto,
 } from './dtos/auth.dto';
 import { JwtAuthGuard } from '@/core/guards';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { UserResponseDto } from '@/users/dtos/user-response.dto';
 import { createResponse } from '@/core/utils/helpers';
 
@@ -31,6 +36,7 @@ export class AuthController {
     description: 'User data',
     type: UserResponseDto,
   })
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user' })
   @UseGuards(JwtAuthGuard)
   async getCurrentUser(@Req() req) {

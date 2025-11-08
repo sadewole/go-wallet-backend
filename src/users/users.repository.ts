@@ -25,8 +25,8 @@ export class UserRepository extends BaseRepository<'users'> {
       createUserDto.password,
     );
     const user = await this.findFirst({
-      where: (users, { eq }) =>
-        eq(users.email, createUserDto.email.toLowerCase()),
+      where: (user, { eq }) =>
+        eq(user.email, createUserDto.email.toLowerCase()),
     });
 
     if (user) {
@@ -44,7 +44,7 @@ export class UserRepository extends BaseRepository<'users'> {
 
   async findByEmail(email: string) {
     const user = await this.findFirst({
-      where: (users, { eq }) => eq(users.email, email),
+      where: (user, { eq }) => eq(user.email, email),
     });
 
     if (!user) {
