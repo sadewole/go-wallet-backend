@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { CreateUserDto } from '@/users/dtos/user.dto';
 import { JwtService } from '@nestjs/jwt';
-import { SelectType } from '@/libs/database';
+import { DBTableType } from '@/libs/database';
 import { PasswordService } from './password.service';
 import { LoginDto, ResendCodeDto, VerifyEmailDto } from './dtos/auth.dto';
 import { CacheService } from '@/libs/cache/cache.service';
@@ -21,7 +21,9 @@ export class AuthService {
     private cacheService: CacheService,
   ) {}
 
-  async login(user: SelectType<'users'>) {
+  async login(user: DBTableType<'users'>) {
+    const loginTime = new Date();
+    await this.userRepository.update(user.id, { lastLogin: loginTime });
     return this.signedUserToken(user);
   }
 
@@ -54,7 +56,10 @@ export class AuthService {
 
     // TODO: SEND CODE EMAIL
 
-    return { message: 'A verification code has been sent to your email' };
+    return {
+      success: true,
+      message: 'A verification code has been sent to your email',
+    };
   }
 
   async verifyEmail(body: VerifyEmailDto) {
@@ -77,10 +82,10 @@ export class AuthService {
       `${REDIS_KEYS.VERIFY_EMAIL_TOKEN}:${user.id}`,
     );
 
-    return { message: 'Email verified successfully' };
+    return { success: true, message: 'Email verified successfully' };
   }
 
-  signedUserToken(user: SelectType<'users'>) {
+  signedUserToken(user: DBTableType<'users'>) {
     const payload = { email: user.email, sub: user.id };
     return {
       access_token: this.jwtService.sign(payload),
@@ -88,7 +93,7 @@ export class AuthService {
     };
   }
 
-  async validateLogin(body: LoginDto): Promise<SelectType<'users'>> {
+  async validateLogin(body: LoginDto): Promise<DBTableType<'users'>> {
     const user = await this.userRepository.findFirst({
       where: (users, { eq }) => eq(users.email, body.email),
     });

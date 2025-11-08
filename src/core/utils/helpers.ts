@@ -21,3 +21,11 @@ export const generateExpiryCode = (minutes = 30) => ({
   code: Math.floor(1000 + Math.random() * 9000).toString(),
   expiryMin: minutes * 60 * 1000,
 });
+
+export function createResponse<T>(response: {
+  success: boolean;
+  message: string;
+  data?: T;
+}) {
+  return response;
+}

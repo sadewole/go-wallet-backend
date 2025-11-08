@@ -5,7 +5,7 @@ import { count, eq, SQL } from 'drizzle-orm';
 import { DATABASE_CONNECTION, DatabaseSchema, schemas } from './constant';
 
 // Helper types for better TypeScript support
-export type SelectType<TTableName extends keyof DatabaseSchema> =
+export type DBTableType<TTableName extends keyof DatabaseSchema> =
   DatabaseSchema[TTableName]['$inferSelect'];
 export type InsertType<TTableName extends keyof DatabaseSchema> =
   DatabaseSchema[TTableName]['$inferInsert'];
@@ -29,7 +29,7 @@ export class BaseRepository<TTableName extends keyof DatabaseSchema> {
     >[0],
   ) {
     return this.database.query[this.tableName].findMany(options) as Promise<
-      SelectType<TTableName>[]
+      DBTableType<TTableName>[]
     >;
   }
 
@@ -39,7 +39,7 @@ export class BaseRepository<TTableName extends keyof DatabaseSchema> {
     >[0],
   ) {
     return this.database.query[this.tableName].findFirst(options) as Promise<
-      SelectType<TTableName> | undefined
+      DBTableType<TTableName> | undefined
     >;
   }
 
@@ -62,7 +62,7 @@ export class BaseRepository<TTableName extends keyof DatabaseSchema> {
       .insert(this.table)
       .values(data as any)
       .returning();
-    return result[0] as SelectType<TTableName>;
+    return result[0] as DBTableType<TTableName>;
   }
 
   async createMany(data: Omit<InsertType<TTableName>, 'id'>[]) {
@@ -83,7 +83,7 @@ export class BaseRepository<TTableName extends keyof DatabaseSchema> {
       .set(data as any)
       .where(eq(idColumn, id))
       .returning();
-    return result[0] as SelectType<TTableName>;
+    return result[0] as DBTableType<TTableName>;
   }
 
   async updateMany(
@@ -107,7 +107,7 @@ export class BaseRepository<TTableName extends keyof DatabaseSchema> {
       .delete(this.table)
       .where(eq(idColumn, id))
       .returning();
-    return result[0] as SelectType<TTableName>;
+    return result[0] as DBTableType<TTableName>;
   }
 
   async deleteMany(conditions: SQL | undefined) {
