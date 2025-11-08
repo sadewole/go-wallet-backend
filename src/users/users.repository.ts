@@ -1,6 +1,11 @@
 import { BaseRepository } from '@/libs/database';
 import { DATABASE_CONNECTION, DatabaseSchema } from '@/libs/database/constant';
-import { ConflictException, Inject, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { NeonHttpDatabase } from 'drizzle-orm/neon-http';
 import { CreateUserDto } from './dtos/user.dto';
 import { PasswordService } from '@/auth/password.service';
@@ -35,5 +40,17 @@ export class UserRepository extends BaseRepository<'users'> {
     });
 
     return result;
+  }
+
+  async findByEmail(email: string) {
+    const user = await this.findFirst({
+      where: (users, { eq }) => eq(users.email, email),
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
   }
 }
