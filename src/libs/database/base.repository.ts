@@ -3,15 +3,10 @@ import { NeonHttpDatabase } from 'drizzle-orm/neon-http';
 import { AnyPgTable } from 'drizzle-orm/pg-core';
 import { count, eq, SQL } from 'drizzle-orm';
 import { DATABASE_CONNECTION, DatabaseSchema, schemas } from './constant';
-
-// Helper types for better TypeScript support
-export type DBTableType<TTableName extends keyof DatabaseSchema> =
-  DatabaseSchema[TTableName]['$inferSelect'];
-export type InsertType<TTableName extends keyof DatabaseSchema> =
-  DatabaseSchema[TTableName]['$inferInsert'];
-
-export class BaseRepository<TTableName extends keyof DatabaseSchema> {
+import { DBTableType, InsertType, TableNames, TableQuery } from './types';
+export class BaseRepository<TTableName extends TableNames> {
   protected readonly logger: Logger;
+  protected readonly table: DatabaseSchema[TTableName];
 
   constructor(
     @Inject(DATABASE_CONNECTION)
@@ -19,42 +14,26 @@ export class BaseRepository<TTableName extends keyof DatabaseSchema> {
     protected readonly tableName: TTableName,
     logger?: Logger,
   ) {
+    this.table = schemas[tableName];
     this.logger = logger || new Logger(`BaseRepository:${String(tableName)}`);
   }
 
   // Relational query methods
-  findMany(
-    options?: Parameters<
-      NeonHttpDatabase<DatabaseSchema>['query'][TTableName]['findMany']
-    >[0],
-  ) {
+  findMany(options?: Parameters<TableQuery<TTableName>['findMany']>[0]) {
     return this.database.query[this.tableName].findMany(options) as Promise<
       DBTableType<TTableName>[]
     >;
   }
 
-  findFirst(
-    options?: Parameters<
-      NeonHttpDatabase<DatabaseSchema>['query'][TTableName]['findFirst']
-    >[0],
-  ) {
+  findFirst(options?: Parameters<TableQuery<TTableName>['findFirst']>[0]) {
     return this.database.query[this.tableName].findFirst(options) as Promise<
       DBTableType<TTableName> | undefined
     >;
   }
 
   // Alias for findFirst for convenience
-  findOne(
-    options?: Parameters<
-      NeonHttpDatabase<DatabaseSchema>['query'][TTableName]['findFirst']
-    >[0],
-  ) {
+  findOne(options?: Parameters<TableQuery<TTableName>['findFirst']>[0]) {
     return this.findFirst(options);
-  }
-
-  // Traditional Drizzle methods for complex queries
-  get table() {
-    return schemas[this.tableName];
   }
 
   async create(data: Omit<InsertType<TTableName>, 'id'>) {

@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { CreateUserDto } from '@/users/dtos/user.dto';
 import { JwtService } from '@nestjs/jwt';
-import { DBTableType } from '@/libs/database';
+import type { DBTableType } from '@/libs/database';
 import { PasswordService } from './password.service';
 import { LoginDto, ResendCodeDto, VerifyEmailDto } from './dtos/auth.dto';
 import { CacheService } from '@/libs/cache/cache.service';
