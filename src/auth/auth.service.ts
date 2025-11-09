@@ -1,6 +1,8 @@
 import { UserRepository } from '@/users/users.repository';
 import {
   BadRequestException,
+  HttpException,
+  HttpStatus,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -11,6 +13,7 @@ import { PasswordService } from './password.service';
 import { LoginDto, ResendCodeDto, VerifyEmailDto } from './dtos/auth.dto';
 import { CacheService } from '@/libs/cache/cache.service';
 import { generateExpiryCode, REDIS_KEYS } from '@/core/utils/helpers';
+import { EmailService } from '@/email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -19,6 +22,7 @@ export class AuthService {
     private readonly passwordService: PasswordService,
     private jwtService: JwtService,
     private cacheService: CacheService,
+    private emailService: EmailService,
   ) {}
 
   async login(user: DBTableType<'users'>) {
@@ -36,7 +40,12 @@ export class AuthService {
       code,
       expiryMin,
     );
-    // TODO: SEND EMAIL NOTIFICATION
+
+    await this.emailService.sendNotification({
+      to: user.email,
+      notificationId: 'thankYouSignUp',
+      content: code,
+    });
 
     return this.signedUserToken(user);
   }
@@ -54,7 +63,21 @@ export class AuthService {
       expiryMin,
     );
 
-    // TODO: SEND CODE EMAIL
+    const result = await this.emailService.sendNotification({
+      to: user.email,
+      notificationId: 'emailVerification',
+      content: code,
+    });
+
+    if (!result) {
+      await this.cacheService.delete(
+        `${REDIS_KEYS.VERIFY_EMAIL_TOKEN}:${user.id}`,
+      );
+      throw new HttpException(
+        'Failed to send verification',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
 
     return {
       success: true,
@@ -76,7 +99,11 @@ export class AuthService {
     }
 
     await this.userRepository.update(user.id, { isVerified: true });
-    // TODO: SEND VERIFIED EMAIL
+
+    await this.emailService.sendNotification({
+      to: user.email,
+      notificationId: 'emailVerified',
+    });
 
     await this.cacheService.delete(
       `${REDIS_KEYS.VERIFY_EMAIL_TOKEN}:${user.id}`,
