@@ -29,3 +29,38 @@ export function createResponse<T>(response: {
 }) {
   return response;
 }
+
+export function generateFilename(contentType: string): string {
+  const timestamp = Date.now();
+  const randomString = Math.random().toString(36).substring(2, 15);
+  const extension = this.getExtensionFromMimeType(contentType);
+
+  return `uploads/${timestamp}-${randomString}.${extension}`;
+}
+
+export function getExtensionFromMimeType(mimeType: string): string {
+  const extensions: { [key: string]: string } = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'application/pdf': 'pdf',
+    'application/msword': 'doc',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+      'docx',
+    'text/plain': 'txt',
+  };
+
+  return extensions[mimeType] || 'bin';
+}
+
+export function isValidContentType(contentType: string): boolean {
+  const allowedTypes = [
+    'image/jpeg',
+    'image/png',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain',
+  ];
+
+  return allowedTypes.includes(contentType);
+}

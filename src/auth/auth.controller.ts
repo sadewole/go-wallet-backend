@@ -73,7 +73,7 @@ export class AuthController {
     const data = await this.authService.login(user);
     return createResponse({
       success: true,
-      message: 'User created successfully',
+      message: 'User logged in successfully',
       data,
     });
   }
