@@ -1,14 +1,13 @@
 import {
+  CanActivate,
   ExecutionContext,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 
 @Injectable()
-export class VerifiedUserGuard {
-  constructor() {}
-
-  canActivate(context: ExecutionContext) {
+export class VerifiedUserGuard implements CanActivate {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const { user } = context.switchToHttp().getRequest();
     if (!user.isVerified) {
       throw new UnauthorizedException(

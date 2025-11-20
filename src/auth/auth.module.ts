@@ -19,6 +19,7 @@ const JwtModuleFactory = JwtModule.registerAsync({
     },
   }),
   inject: [ConfigService],
+  global: true,
 });
 
 @Module({
