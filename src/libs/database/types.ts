@@ -17,3 +17,5 @@ export type TableQueries = NeonHttpDatabase<DatabaseSchema>['query'];
 
 export type TableQuery<TTableName extends TableNames> =
   TableQueries[TTableName];
+
+export type TransactionType = NeonHttpDatabase<DatabaseSchema>['transaction'];

@@ -3,7 +3,13 @@ import { NeonHttpDatabase } from 'drizzle-orm/neon-http';
 import { AnyPgTable } from 'drizzle-orm/pg-core';
 import { count, eq, SQL } from 'drizzle-orm';
 import { DATABASE_CONNECTION, DatabaseSchema, schemas } from './constant';
-import { DBTableType, InsertType, TableNames, TableQuery } from './types';
+import {
+  DBTableType,
+  InsertType,
+  TableNames,
+  TableQuery,
+  TransactionType,
+} from './types';
 export class BaseRepository<TTableName extends TableNames> {
   protected readonly logger: Logger;
   protected readonly table: DatabaseSchema[TTableName];
@@ -137,8 +143,18 @@ export class BaseRepository<TTableName extends TableNames> {
   }
 
   // Transaction support
-  async transaction<T>(callback: (tx: any) => Promise<T>): Promise<T> {
-    return await this.database.transaction(callback);
+  async transaction<T>(
+    callback: (tx: TransactionType) => Promise<T>,
+  ): Promise<T> {
+    return await this.database.transaction(callback as any);
+  }
+
+  withTransaction(tx: TransactionType): BaseRepository<TTableName> {
+    return new BaseRepository(
+      tx as unknown as NeonHttpDatabase<DatabaseSchema>,
+      this.tableName,
+      this.logger,
+    );
   }
 
   // Get the query builder for this table

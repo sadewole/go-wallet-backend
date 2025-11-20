@@ -30,3 +30,10 @@ export class CreditApplicationDto {
   @ApiProperty()
   purposeOfLoan?: string;
 }
+
+export class CreditRequestDto {
+  @IsNumber()
+  @IsPositive()
+  @ApiProperty()
+  requestAmount: number;
+}

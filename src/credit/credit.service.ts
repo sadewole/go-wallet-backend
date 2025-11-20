@@ -1,6 +1,6 @@
 import { BaseRepository, RepositoryFactory } from '@/libs/database';
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { CreditApplicationDto } from './dtos/credit.dto';
+import { CreditApplicationDto, CreditRequestDto } from './dtos/credit.dto';
 
 @Injectable()
 export class CreditService {
@@ -22,25 +22,119 @@ export class CreditService {
       this.repositoryFactory.create('creditTransactions');
   }
 
+  async getCredit(userId: string) {
+    return this.creditRepository.findFirst({
+      where: (credit, { eq }) => eq(credit.userId, userId),
+    });
+  }
+
   async createCreditApplication(data: CreditApplicationDto, userId: string) {
-    const findExistingApplication =
-      await this.creditApplicationsRepository.findFirst({
-        where: (application, { eq, and }) =>
+    return this.creditApplicationsRepository.transaction(async (tx) => {
+      const txCreditAppRepo =
+        this.creditApplicationsRepository.withTransaction(tx);
+      const txTimelineRepo = this.creditTimelineRepository.withTransaction(tx);
+
+      const findExistingApplication = await txCreditAppRepo.findFirst({
+        where: (application, { eq, and, inArray }) =>
           and(
             eq(application.userId, userId),
-            eq(application.status, 'pending'),
+            inArray(application.status, ['pending', 'under_review']),
           ),
       });
 
-    if (findExistingApplication) {
+      if (findExistingApplication) {
+        throw new BadRequestException(
+          'You already have a pending credit application. Please wait for it to be processed before applying again.',
+        );
+      }
+
+      const creditApplication = await txCreditAppRepo.create({
+        ...data,
+        userId,
+      });
+
+      await txTimelineRepo.create({
+        status: 'pending',
+        entityType: 'credit_application',
+        entityId: creditApplication.id,
+        note: `Credit application created with amount ${data.applicationAmount}`,
+      });
+
+      return creditApplication;
+    });
+  }
+
+  async updateCreditApplication(data: CreditApplicationDto, id: string) {
+    const existingApplication = await this.creditApplicationsRepository.findOne(
+      {
+        where: (application, { eq }) => eq(application.id, id),
+      },
+    );
+    if (!existingApplication) {
+      throw new BadRequestException('Credit application not found.');
+    }
+
+    if (existingApplication.status !== 'pending') {
       throw new BadRequestException(
-        'You already have a pending credit application. Please wait for it to be processed before applying again.',
+        'Only pending applications can be updated.',
       );
     }
 
-    return this.creditApplicationsRepository.create({
-      ...data,
-      userId,
+    return this.creditApplicationsRepository.update(id, data);
+  }
+
+  async creditRequest(data: CreditRequestDto, userId: string) {
+    return this.creditRequestsRepository.transaction(async (tx) => {
+      const txCreditRequestRepo =
+        this.creditRequestsRepository.withTransaction(tx);
+      const txTimelineRepo = this.creditTimelineRepository.withTransaction(tx);
+
+      const credit = await this.creditRepository.findFirst({
+        where: (credit, { eq }) => eq(credit.userId, userId),
+      });
+
+      if (!credit) {
+        throw new BadRequestException(
+          'No credit account found. Please apply for credit first.',
+        );
+      }
+
+      const findExistingRequest = await txCreditRequestRepo.findFirst({
+        where: (request, { eq, inArray, and }) =>
+          and(
+            eq(request.creditId, credit.id),
+            inArray(request.status, ['pending', 'under_review']),
+          ),
+      });
+
+      if (findExistingRequest) {
+        throw new BadRequestException(
+          'You already have a pending credit request. Please wait for it to be processed before making another request.',
+        );
+      }
+
+      const creditRequest = await txCreditRequestRepo.create({
+        ...data,
+        creditId: credit.id,
+      });
+
+      await txTimelineRepo.create({
+        status: 'pending',
+        entityType: 'credit_request',
+        entityId: creditRequest.id,
+        changedBy: userId,
+        note: `Credit request created with amount ${data.requestAmount}`,
+      });
+
+      return creditRequest;
+    });
+  }
+
+  async getCreditTimeline() {}
+
+  async getCreditTransactions(creditId: string) {
+    return this.creditTransactionsRepository.findMany({
+      where: (transaction, { eq }) => eq(transaction.creditId, creditId),
     });
   }
 }

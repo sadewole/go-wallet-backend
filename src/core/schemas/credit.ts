@@ -16,6 +16,7 @@ import { timestamps } from '../utils/timestamps';
 export const statusEnum = pgEnum('status', ['active', 'suspended', 'closed']);
 export const applicationStatusEnum = pgEnum('application_status', [
   'pending',
+  'under_review',
   'approved',
   'rejected',
 ]);

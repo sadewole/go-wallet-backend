@@ -15,6 +15,13 @@
       "when": 1762731850654,
       "tag": "0001_supreme_boomerang",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1763633089605,
+      "tag": "0002_steep_speedball",
+      "breakpoints": true
     }
   ]
 }
