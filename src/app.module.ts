@@ -6,6 +6,7 @@ import { DatabaseModule } from './libs/database';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { CacheModule } from './libs/cache/cache.module';
+import { CreditModule } from './credit/credit.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { CacheModule } from './libs/cache/cache.module';
     UsersModule,
     AuthModule,
     CacheModule,
+    CreditModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -83,6 +83,31 @@ export class CreditService {
     return this.creditApplicationsRepository.update(id, data);
   }
 
+  async getAllCreditApplications(userId: string) {
+    return this.creditApplicationsRepository.findMany({
+      where: (application, { eq }) => eq(application.userId, userId),
+      orderBy: (application, { desc }) => [desc(application.createdAt)],
+    });
+  }
+
+  async getCreditApplicationById(id: string) {
+    const application = await this.creditApplicationsRepository.findFirst({
+      where: (application, { eq }) => eq(application.id, id),
+    });
+
+    if (!application) {
+      throw new BadRequestException('Credit application not found.');
+    }
+
+    const timelines = await this.creditTimelineRepository.findMany({
+      where: (timeline, { eq }) => eq(timeline.entityId, application.id),
+    });
+
+    (application as any).timelines = timelines;
+
+    return application;
+  }
+
   async creditRequest(data: CreditRequestDto, userId: string) {
     return this.creditRequestsRepository.transaction(async (tx) => {
       const txCreditRequestRepo =
@@ -130,9 +155,16 @@ export class CreditService {
     });
   }
 
-  async getCreditTimeline() {}
+  async getCreditTransactions(userId: string) {
+    const credit = await this.creditRepository.findFirst({
+      where: (credit, { eq }) => eq(credit.userId, userId),
+    });
 
-  async getCreditTransactions(creditId: string) {
+    if (!credit) {
+      throw new BadRequestException('Credit account not found for the user.');
+    }
+
+    const creditId = credit.id;
     return this.creditTransactionsRepository.findMany({
       where: (transaction, { eq }) => eq(transaction.creditId, creditId),
     });

@@ -45,13 +45,13 @@ export class UserResponseDto {
 
   @ApiProperty({
     description: 'Creation timestamp',
-    example: '2023-10-01T12:00:00.000Z',
+    example: '2025-10-01T12:00:00.000Z',
   })
   createdAt: string;
 
   @ApiProperty({
     description: 'Last update timestamp',
-    example: '2023-10-01T12:00:00.000Z',
+    example: '2025-10-01T12:00:00.000Z',
   })
   updatedAt: string;
 }
