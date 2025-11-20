@@ -138,6 +138,12 @@ export class CreditService {
         );
       }
 
+      if (data.requestAmount > credit.limit - credit.available) {
+        throw new BadRequestException(
+          'Requested amount exceeds available credit limit.',
+        );
+      }
+
       const creditRequest = await txCreditRequestRepo.create({
         ...data,
         creditId: credit.id,

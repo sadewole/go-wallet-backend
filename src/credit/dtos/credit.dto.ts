@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, IsString, IsPositive, IsOptional } from 'class-validator';
+import { IsNumber, IsString, IsOptional, Min, Max } from 'class-validator';
 
 export class BusinessDoc {
   @IsString()
@@ -17,8 +17,9 @@ export class CreditApplicationDto {
   bvn: string;
 
   @IsNumber()
-  @IsPositive()
   @ApiProperty()
+  @Min(0, { message: 'Application amount must be a positive number' })
+  @Max(1000000, { message: 'Application amount exceeds the maximum limit' })
   applicationAmount: number;
 
   @ApiProperty({ type: [BusinessDoc] })
@@ -33,7 +34,7 @@ export class CreditApplicationDto {
 
 export class CreditRequestDto {
   @IsNumber()
-  @IsPositive()
+  @Min(0, { message: 'Request amount must be a positive number' })
   @ApiProperty()
   requestAmount: number;
 }

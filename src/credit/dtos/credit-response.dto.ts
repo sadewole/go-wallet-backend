@@ -3,7 +3,7 @@ import {
   ApplicationStatusEnum,
   CreditStatusEnum,
   TransactionTypeEnum,
-} from '../interfaces/credit.interface';
+} from '../interface/credit.interface';
 
 export class CreditResponse {
   @ApiProperty({

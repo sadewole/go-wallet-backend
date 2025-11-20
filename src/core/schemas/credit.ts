@@ -8,6 +8,7 @@ import {
   json,
   index,
   uniqueIndex,
+  AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { users } from './users';
@@ -41,7 +42,7 @@ export const credits = pgTable(
     available: integer('available').notNull(), // limit - outstanding
     status: statusEnum('status').notNull().default('active'),
     userId: uuid('user_id')
-      .references(() => users.id, { onDelete: 'cascade' })
+      .references((): AnyPgColumn => users.id, { onDelete: 'cascade' })
       .notNull()
       .unique(),
     ...timestamps,

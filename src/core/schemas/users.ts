@@ -1,4 +1,5 @@
 import {
+  AnyPgColumn,
   boolean,
   pgEnum,
   pgTable,
@@ -22,12 +23,15 @@ export const users = pgTable('users', {
   isVerified: boolean('isVerified').default(false),
   lastLogin: timestamp('last_login'),
   role: roleEnum('role').default('user').notNull(),
-  creditId: uuid('credit_id').references(() => credits.id),
+  creditId: uuid('credit_id').references((): AnyPgColumn => credits.id),
   ...timestamps,
 });
 
 export const usersRelations = relations(users, ({ one, many }) => ({
-  credit: one(credits),
+  credit: one(credits, {
+    fields: [users.creditId],
+    references: [credits.id],
+  }),
   creditApplications: many(creditApplications),
   timelineChanges: many(creditTimeline),
 }));

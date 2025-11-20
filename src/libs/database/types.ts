@@ -3,10 +3,10 @@ import { DatabaseSchema } from './constant';
 import { NeonHttpDatabase } from 'drizzle-orm/neon-http';
 
 export type DBTableType<TTableName extends keyof DatabaseSchema> =
-  DatabaseSchema[TTableName]['$inferSelect'];
+  DatabaseSchema[TTableName] extends { $inferSelect: infer S } ? S : never;
 
 export type InsertType<TTableName extends keyof DatabaseSchema> =
-  DatabaseSchema[TTableName]['$inferInsert'];
+  DatabaseSchema[TTableName] extends { $inferInsert: infer I } ? I : never;
 
 // Filter to get only table names (not relations, enums, etc.)
 export type TableNames = {

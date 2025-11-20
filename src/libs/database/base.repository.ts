@@ -26,15 +26,15 @@ export class BaseRepository<TTableName extends TableNames> {
 
   // Relational query methods
   findMany(options?: Parameters<TableQuery<TTableName>['findMany']>[0]) {
-    return this.database.query[this.tableName].findMany(options) as Promise<
-      DBTableType<TTableName>[]
-    >;
+    return this.database.query[this.tableName].findMany(
+      options,
+    ) as unknown as Promise<DBTableType<TTableName>[]>;
   }
 
   findFirst(options?: Parameters<TableQuery<TTableName>['findFirst']>[0]) {
-    return this.database.query[this.tableName].findFirst(options) as Promise<
-      DBTableType<TTableName> | undefined
-    >;
+    return this.database.query[this.tableName].findFirst(
+      options,
+    ) as unknown as Promise<DBTableType<TTableName> | undefined>;
   }
 
   // Alias for findFirst for convenience

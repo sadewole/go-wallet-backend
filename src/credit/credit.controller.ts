@@ -15,7 +15,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CreditService } from './credit.service';
-import { JwtAuthGuard } from '@/core/guards';
+import { JwtAuthGuard, VerifiedUserGuard } from '@/core/guards';
 import { CreditApplicationDto, CreditRequestDto } from './dtos/credit.dto';
 import { createResponse } from '@/core/utils/helpers';
 import {
@@ -29,7 +29,7 @@ import {
 @Controller('credit')
 @ApiTags('Credit')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, VerifiedUserGuard)
 export class CreditController {
   constructor(private readonly creditService: CreditService) {}
 

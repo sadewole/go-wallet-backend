@@ -51,6 +51,7 @@ export class UserRepository extends BaseRepository<'users'> {
       throw new NotFoundException('User not found');
     }
 
+    delete user.password;
     return user;
   }
 }
