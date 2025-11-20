@@ -64,6 +64,7 @@ export const creditApplications = pgTable(
     approvedDate: timestamp('approved_date'),
     status: applicationStatusEnum('status').notNull().default('pending'),
     rejectionReason: text('rejection_reason'),
+    purposeOfLoan: text('rejection_reason'),
     userId: uuid('user_id')
       .references(() => users.id, { onDelete: 'cascade' })
       .notNull(),

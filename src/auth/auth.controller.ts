@@ -6,6 +6,7 @@ import {
   Post,
   Put,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -53,8 +54,16 @@ export class AuthController {
     type: AuthResponse,
   })
   @ApiOperation({ summary: 'Register user' })
-  async register(@Body() body: CreateUserDto) {
+  async register(@Body() body: CreateUserDto, @Res() res) {
     const data = await this.authService.register(body);
+
+    res.cookie('access_token', data.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 3600000,
+    });
+
     return createResponse({
       success: true,
       message: 'User created successfully',
@@ -68,14 +77,28 @@ export class AuthController {
     type: AuthResponse,
   })
   @ApiOperation({ summary: 'Login user' })
-  async login(@Body() body: LoginDto) {
+  async login(@Body() body: LoginDto, @Res() res) {
     const user = await this.authService.validateLogin(body);
     const data = await this.authService.login(user);
-    return createResponse({
+
+    res.cookie('access_token', data.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 3600000, // 1hr
+    });
+
+    return res.json({
       success: true,
       message: 'User logged in successfully',
       data,
     });
+  }
+
+  @Post('logout')
+  async logout(@Res() res) {
+    res.clearCookie('access_token');
+    return res.send({ message: 'Logout successful' });
   }
 
   @Post('resend-code')
