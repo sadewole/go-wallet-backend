@@ -9,7 +9,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { timestamps } from '../utils/timestamps';
 import { relations } from 'drizzle-orm';
-import { credits, creditApplications, creditTimeline } from './credit';
+import { credits, creditTimeline } from './credit';
 
 export const roleEnum = pgEnum('role', ['user', 'admin']);
 
@@ -32,6 +32,5 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     fields: [users.creditId],
     references: [credits.id],
   }),
-  creditApplications: many(creditApplications),
   timelineChanges: many(creditTimeline),
 }));

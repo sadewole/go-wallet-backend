@@ -14,6 +14,7 @@ import { LoginDto, ResendCodeDto, VerifyEmailDto } from './dtos/auth.dto';
 import { CacheService } from '@/libs/cache/cache.service';
 import { generateExpiryCode, REDIS_KEYS } from '@/core/utils/helpers';
 import { EmailService } from '@/email/email.service';
+import { CreditRepositoryManager } from '@/credit/credit-repository.manager';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +24,7 @@ export class AuthService {
     private jwtService: JwtService,
     private cacheService: CacheService,
     private emailService: EmailService,
+    private creditRepoManager: CreditRepositoryManager,
   ) {}
 
   async login(user: DBTableType<'users'>) {
@@ -86,30 +88,51 @@ export class AuthService {
   }
 
   async verifyEmail(body: VerifyEmailDto) {
-    const user = await this.userRepository.findByEmail(body.email);
-    if (user.isVerified) {
-      throw new BadRequestException('Email already verified');
-    }
+    const defaultCreditLimit = 1000;
+    return this.userRepository.transaction(async (tx) => {
+      const txUserRepo = this.userRepository.withTransaction(tx);
+      const txCreditRepo = this.creditRepoManager.credit.withTransaction(tx);
 
-    const cachedCode = await this.cacheService.get(
-      `${REDIS_KEYS.VERIFY_EMAIL_TOKEN}:${user.id}`,
-    );
-    if (cachedCode !== body.code) {
-      throw new UnauthorizedException('Invalid verification code');
-    }
+      const user = await txUserRepo.findOne({
+        where: (user, { eq }) => eq(user.email, body.email),
+      });
 
-    await this.userRepository.update(user.id, { isVerified: true });
+      if (user.isVerified) {
+        throw new BadRequestException('Email already verified');
+      }
 
-    await this.emailService.sendNotification({
-      to: user.email,
-      notificationId: 'emailVerified',
+      const cachedCode = await this.cacheService.get(
+        `${REDIS_KEYS.VERIFY_EMAIL_TOKEN}:${user.id}`,
+      );
+      if (cachedCode !== body.code) {
+        throw new UnauthorizedException('Invalid verification code');
+      }
+
+      const creditAccount = await txCreditRepo.create({
+        userId: user.id,
+        limit: defaultCreditLimit,
+        available: defaultCreditLimit,
+        outstanding: 0,
+        spendableAmount: 0,
+        status: 'active',
+      });
+
+      await txUserRepo.update(user.id, {
+        isVerified: true,
+        creditId: creditAccount.id,
+      });
+
+      await this.emailService.sendNotification({
+        to: user.email,
+        notificationId: 'emailVerified',
+      });
+
+      await this.cacheService.delete(
+        `${REDIS_KEYS.VERIFY_EMAIL_TOKEN}:${user.id}`,
+      );
+
+      return { success: true, message: 'Email verified successfully' };
     });
-
-    await this.cacheService.delete(
-      `${REDIS_KEYS.VERIFY_EMAIL_TOKEN}:${user.id}`,
-    );
-
-    return { success: true, message: 'Email verified successfully' };
   }
 
   signedUserToken(user: DBTableType<'users'>) {

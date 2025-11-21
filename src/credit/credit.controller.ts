@@ -50,66 +50,66 @@ export class CreditController {
 
   @Post('apply')
   @ApiOkResponse({
-    description: 'Credit application',
+    description: 'Credit limit increase application created',
     type: CreditApplicationResponse,
   })
-  @ApiOperation({ summary: 'Create credit application' })
-  async creditApplication(@Body() body: CreditApplicationDto, @Req() red) {
-    const data = await this.creditService.createCreditApplication(
+  @ApiOperation({ summary: 'Apply for credit limit increase' })
+  async creditApplication(@Body() body: CreditApplicationDto, @Req() req) {
+    const data = await this.creditService.createCreditLimit(
       body,
-      red.user.id,
+      req.user.creditId,
     );
     return createResponse({
       success: true,
-      message: 'Credit application created successfully',
+      message: 'Credit limit increased successfully',
       data,
     });
   }
 
   @Get('apply')
   @ApiOkResponse({
-    description: 'Credit applications',
+    description: 'Credit limit applications',
     type: [CreditApplicationResponse],
   })
-  @ApiOperation({ summary: 'Get all credit application' })
-  async getAllCreditApplication(@Req() req) {
-    const data = await this.creditService.getAllCreditApplications(req.user.id);
+  @ApiOperation({ summary: 'Get all credit limit applications' })
+  async getAllCreditLimits(@Req() req) {
+    const data = await this.creditService.getAllCreditLimits(req.user.creditId);
     return createResponse({
       success: true,
-      message: 'Credit applications retrieved successfully',
+      message: 'Credit limit applications retrieved successfully',
       data,
     });
   }
 
   @Get('apply/:id')
   @ApiOkResponse({
-    description: 'Credit application',
+    description: 'Credit limit application',
     type: CreditApplicationWithTimelineResponse,
   })
-  @ApiOperation({ summary: 'Get credit application' })
-  async getCreditApplication(@Param('id') id: string) {
-    const data = await this.creditService.getCreditApplicationById(id);
+  @ApiOperation({ summary: 'Get credit limit application' })
+  async getCreditLimit(@Param('id') id: string) {
+    const data = await this.creditService.getCreditLimitById(id);
     return createResponse({
       success: true,
-      message: 'Credit application retrieved successfully',
+      message: 'Credit limit application retrieved successfully',
       data,
     });
   }
 
   @Patch('apply/:id')
   @ApiOkResponse({
-    description: 'Credit application updated',
+    description: 'Credit limit updated sucessfully',
     type: CreditApplicationResponse,
   })
-  @ApiOperation({ summary: 'Update credit application' })
-  async updateCreditApplication(
+  @ApiOperation({ summary: 'Update credit limit application' })
+  async updateCreditLimit(
     @Param('id') id: string,
     @Body() body: CreditApplicationDto,
   ) {
-    const data = await this.creditService.updateCreditApplication(body, id);
+    const data = await this.creditService.updateCreditLimit(body, id);
     return createResponse({
       success: true,
-      message: 'Credit application updated successfully',
+      message: 'Credit limit updated successfully',
       data,
     });
   }

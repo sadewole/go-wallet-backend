@@ -55,8 +55,8 @@ export const credits = pgTable(
   ],
 );
 
-export const creditApplications = pgTable(
-  'credit_applications',
+export const creditLimitApplications = pgTable(
+  'limit_applications',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     bvn: text('bvn').notNull(),
@@ -67,19 +67,19 @@ export const creditApplications = pgTable(
     status: applicationStatusEnum('status').notNull().default('pending'),
     rejectionReason: text('rejection_reason'),
     purposeOfLoan: text('rejection_reason'),
-    userId: uuid('user_id')
-      .references(() => users.id, { onDelete: 'cascade' })
+    creditId: uuid('credit_id')
+      .references(() => credits.id, { onDelete: 'cascade' })
       .notNull(),
     ...timestamps,
   },
   (table) => [
-    index('credit_applications_user_id_idx').on(table.userId),
-    index('credit_applications_status_idx').on(table.status),
-    index('credit_applications_bvn_idx').on(table.bvn),
-    index('credit_applications_created_at_idx').on(table.createdAt),
+    index('limit_applications_credit_id_idx').on(table.creditId),
+    index('limit_applications_status_idx').on(table.status),
+    index('limit_applications_bvn_idx').on(table.bvn),
+    index('limit_applications_created_at_idx').on(table.createdAt),
     // Prevent duplicate pending applications from same user
-    uniqueIndex('credit_applications_user_pending_idx')
-      .on(table.userId)
+    uniqueIndex('limit_applications_credit_pending_idx')
+      .on(table.creditId)
       .where(sql`status = 'pending'`),
   ],
 );
@@ -172,11 +172,11 @@ export const creditRelations = relations(credits, ({ one, many }) => ({
 }));
 
 export const creditApplicationsRelations = relations(
-  creditApplications,
+  creditLimitApplications,
   ({ one, many }) => ({
-    user: one(users, {
-      fields: [creditApplications.userId],
-      references: [users.id],
+    credit: one(credits, {
+      fields: [creditLimitApplications.creditId],
+      references: [credits.id],
     }),
     timeline: many(creditTimeline, {
       relationName: 'application_timeline',
@@ -186,9 +186,9 @@ export const creditApplicationsRelations = relations(
 
 export const creditTimelineRelations = relations(creditTimeline, ({ one }) => ({
   // These relations are optional and for type safety
-  creditApplication: one(creditApplications, {
+  creditApplication: one(creditLimitApplications, {
     fields: [creditTimeline.entityId],
-    references: [creditApplications.id],
+    references: [creditLimitApplications.id],
     relationName: 'application_timeline',
   }),
   creditRequest: one(creditRequests, {

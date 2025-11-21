@@ -1,19 +1,24 @@
 import { BaseRepository, RepositoryFactory } from '@/libs/database';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { CreditApplicationDto, CreditRequestDto } from './dtos/credit.dto';
 
 @Injectable()
 export class CreditService {
   private readonly creditRepository: BaseRepository<'credits'>;
-  private readonly creditApplicationsRepository: BaseRepository<'creditApplications'>;
+  private readonly creditLimitsRepository: BaseRepository<'creditLimitApplications'>;
   private readonly creditRequestsRepository: BaseRepository<'creditRequests'>;
   private readonly creditTimelineRepository: BaseRepository<'creditTimeline'>;
   private readonly creditTransactionsRepository: BaseRepository<'creditTransactions'>;
 
   constructor(private readonly repositoryFactory: RepositoryFactory) {
     this.creditRepository = this.repositoryFactory.create('credits');
-    this.creditApplicationsRepository =
-      this.repositoryFactory.create('creditApplications');
+    this.creditLimitsRepository = this.repositoryFactory.create(
+      'creditLimitApplications',
+    );
     this.creditRequestsRepository =
       this.repositoryFactory.create('creditRequests');
     this.creditTimelineRepository =
@@ -28,16 +33,15 @@ export class CreditService {
     });
   }
 
-  async createCreditApplication(data: CreditApplicationDto, userId: string) {
-    return this.creditApplicationsRepository.transaction(async (tx) => {
-      const txCreditAppRepo =
-        this.creditApplicationsRepository.withTransaction(tx);
+  async createCreditLimit(data: CreditApplicationDto, creditId: string) {
+    return this.creditLimitsRepository.transaction(async (tx) => {
+      const txCreditLimitRepo = this.creditLimitsRepository.withTransaction(tx);
       const txTimelineRepo = this.creditTimelineRepository.withTransaction(tx);
 
-      const findExistingApplication = await txCreditAppRepo.findFirst({
+      const findExistingApplication = await txCreditLimitRepo.findFirst({
         where: (application, { eq, and, inArray }) =>
           and(
-            eq(application.userId, userId),
+            eq(application.creditId, creditId),
             inArray(application.status, ['pending', 'under_review']),
           ),
       });
@@ -48,50 +52,48 @@ export class CreditService {
         );
       }
 
-      const creditApplication = await txCreditAppRepo.create({
+      const creditLimit = await txCreditLimitRepo.create({
         ...data,
-        userId,
+        creditId,
       });
 
       await txTimelineRepo.create({
         status: 'pending',
         entityType: 'credit_application',
-        entityId: creditApplication.id,
+        entityId: creditLimit.id,
         note: `Credit application created with amount ${data.applicationAmount}`,
       });
 
-      return creditApplication;
+      return creditLimit;
     });
   }
 
-  async updateCreditApplication(data: CreditApplicationDto, id: string) {
-    const existingApplication = await this.creditApplicationsRepository.findOne(
-      {
-        where: (application, { eq }) => eq(application.id, id),
-      },
-    );
-    if (!existingApplication) {
+  async updateCreditLimit(data: CreditApplicationDto, id: string) {
+    const existingLimit = await this.creditLimitsRepository.findOne({
+      where: (application, { eq }) => eq(application.id, id),
+    });
+    if (!existingLimit) {
       throw new BadRequestException('Credit application not found.');
     }
 
-    if (existingApplication.status !== 'pending') {
+    if (existingLimit.status !== 'pending') {
       throw new BadRequestException(
         'Only pending applications can be updated.',
       );
     }
 
-    return this.creditApplicationsRepository.update(id, data);
+    return this.creditLimitsRepository.update(id, data);
   }
 
-  async getAllCreditApplications(userId: string) {
-    return this.creditApplicationsRepository.findMany({
-      where: (application, { eq }) => eq(application.userId, userId),
+  async getAllCreditLimits(creditId: string) {
+    return this.creditLimitsRepository.findMany({
+      where: (application, { eq }) => eq(application.creditId, creditId),
       orderBy: (application, { desc }) => [desc(application.createdAt)],
     });
   }
 
-  async getCreditApplicationById(id: string) {
-    const application = await this.creditApplicationsRepository.findFirst({
+  async getCreditLimitById(id: string) {
+    const application = await this.creditLimitsRepository.findFirst({
       where: (application, { eq }) => eq(application.id, id),
     });
 
@@ -118,9 +120,9 @@ export class CreditService {
         where: (credit, { eq }) => eq(credit.userId, userId),
       });
 
-      if (!credit) {
-        throw new BadRequestException(
-          'No credit account found. Please apply for credit first.',
+      if (credit.status !== 'active') {
+        throw new UnauthorizedException(
+          'Your credit account is not active, kindly apply for appeal to enable this process',
         );
       }
 
