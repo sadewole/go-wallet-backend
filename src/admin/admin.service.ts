@@ -6,11 +6,12 @@ import { Injectable, Logger } from '@nestjs/common';
 
 @Injectable()
 export class AdminService {
+  private readonly logger = new Logger(AdminService.name);
+
   constructor(
     private readonly userRepository: UserRepository,
     private readonly cRepoManager: CreditRepositoryManager,
     private readonly emailService: EmailService,
-    private logger: Logger,
   ) {}
 
   async getAllUsers() {

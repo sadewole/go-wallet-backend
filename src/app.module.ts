@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { CacheModule } from './libs/cache/cache.module';
 import { CreditModule } from './credit/credit.module';
 import { AdminModule } from './admin/admin.module';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { AdminModule } from './admin/admin.module';
     AuthModule,
     CacheModule,
     CreditModule,
+    StorageModule,
     AdminModule,
   ],
   controllers: [AppController],

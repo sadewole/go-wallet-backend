@@ -8,8 +8,13 @@ import {
   CreditApplicationWithUser,
   CreditRequestWithUser,
 } from './interface/credit.interface';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
+@Injectable()
 export class CreditRepositoryManager {
   public readonly credit: BaseRepository<'credits'>;
   public readonly creditLimits: BaseRepository<'creditLimitApplications'>;

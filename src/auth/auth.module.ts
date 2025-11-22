@@ -9,6 +9,7 @@ import enviroments from '@/core/utils/enviroments';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './strategies';
 import { EmailService } from '@/email/email.service';
+import { CreditRepositoryManager } from '@/credit/credit-repository.manager';
 
 const JwtModuleFactory = JwtModule.registerAsync({
   imports: [ConfigModule],
@@ -31,6 +32,7 @@ const JwtModuleFactory = JwtModule.registerAsync({
     PasswordService,
     JwtStrategy,
     EmailService,
+    CreditRepositoryManager,
   ],
   exports: [AuthService, PasswordService],
 })

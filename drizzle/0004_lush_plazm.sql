@@ -1,0 +1,1 @@
+ALTER TABLE "credit_requests" ADD COLUMN "approved_date" timestamp;

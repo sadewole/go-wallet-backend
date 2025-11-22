@@ -8,8 +8,10 @@ import {
 } from '@nestjs/common';
 import { StorageService } from './storage.service';
 import { GeneratePresignedUrlDto } from './dtos/presigned.dto';
+import { ApiTags } from '@nestjs/swagger';
 
 @Controller('storage')
+@ApiTags('Storage')
 export class StorageController {
   constructor(private storageService: StorageService) {}
 
