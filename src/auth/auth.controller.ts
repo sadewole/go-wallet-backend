@@ -64,7 +64,7 @@ export class AuthController {
       maxAge: 3600000,
     });
 
-    return createResponse({
+    return res.json({
       success: true,
       message: 'User created successfully',
       data,

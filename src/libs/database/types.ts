@@ -1,6 +1,6 @@
 import { PgTable } from 'drizzle-orm/pg-core';
 import { DatabaseSchema } from './constant';
-import { NeonHttpDatabase } from 'drizzle-orm/neon-http';
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 export type DBTableType<TTableName extends keyof DatabaseSchema> =
   DatabaseSchema[TTableName] extends { $inferSelect: infer S } ? S : never;
@@ -13,9 +13,9 @@ export type TableNames = {
   [K in keyof DatabaseSchema]: DatabaseSchema[K] extends PgTable ? K : never;
 }[keyof DatabaseSchema];
 
-export type TableQueries = NeonHttpDatabase<DatabaseSchema>['query'];
+export type TableQueries = PostgresJsDatabase<DatabaseSchema>['query'];
 
 export type TableQuery<TTableName extends TableNames> =
   TableQueries[TTableName];
 
-export type TransactionType = NeonHttpDatabase<DatabaseSchema>['transaction'];
+export type TransactionType = PostgresJsDatabase<DatabaseSchema>['transaction'];

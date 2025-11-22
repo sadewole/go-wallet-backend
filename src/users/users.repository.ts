@@ -6,15 +6,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { NeonHttpDatabase } from 'drizzle-orm/neon-http';
 import { CreateUserDto } from './dtos/user.dto';
 import { PasswordService } from '@/auth/password.service';
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 @Injectable()
 export class UserRepository extends BaseRepository<'users'> {
   constructor(
     @Inject(DATABASE_CONNECTION)
-    database: NeonHttpDatabase<DatabaseSchema>,
+    database: PostgresJsDatabase<DatabaseSchema>,
     private passwordService: PasswordService,
   ) {
     super(database, 'users');

@@ -1,5 +1,5 @@
 import { Inject, Logger } from '@nestjs/common';
-import { NeonHttpDatabase } from 'drizzle-orm/neon-http';
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { AnyPgTable } from 'drizzle-orm/pg-core';
 import { count, eq, SQL } from 'drizzle-orm';
 import { DATABASE_CONNECTION, DatabaseSchema, schemas } from './constant';
@@ -16,7 +16,7 @@ export class BaseRepository<TTableName extends TableNames> {
 
   constructor(
     @Inject(DATABASE_CONNECTION)
-    protected readonly database: NeonHttpDatabase<DatabaseSchema>,
+    protected readonly database: PostgresJsDatabase<DatabaseSchema>,
     protected readonly tableName: TTableName,
     logger?: Logger,
   ) {
@@ -151,7 +151,7 @@ export class BaseRepository<TTableName extends TableNames> {
 
   withTransaction(tx: TransactionType): BaseRepository<TTableName> {
     return new BaseRepository(
-      tx as unknown as NeonHttpDatabase<DatabaseSchema>,
+      tx as unknown as PostgresJsDatabase<DatabaseSchema>,
       this.tableName,
       this.logger,
     );

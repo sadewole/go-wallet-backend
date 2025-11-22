@@ -1,8 +1,8 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { drizzle } from 'drizzle-orm/neon-http';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import * as postgres from 'postgres';
 import { DATABASE_CONNECTION, schemas } from './constant';
-import { neon } from '@neondatabase/serverless';
 import { RepositoryFactory } from './repository.factory';
 import enviroments from '@/core/utils/enviroments';
 
@@ -13,8 +13,8 @@ import enviroments from '@/core/utils/enviroments';
       provide: DATABASE_CONNECTION,
       useFactory: (configService: ConfigService) => {
         const databaseUrl = configService.getOrThrow(enviroments.DATABASE_URL);
-        const sql = neon(databaseUrl);
-        return drizzle({ client: sql, schema: schemas });
+        const client = postgres(databaseUrl);
+        return drizzle({ client, schema: schemas });
       },
       inject: [ConfigService],
     },
