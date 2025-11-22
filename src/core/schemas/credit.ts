@@ -93,6 +93,7 @@ export const creditRequests = pgTable(
     creditId: uuid('credit_id')
       .references(() => credits.id, { onDelete: 'cascade' })
       .notNull(),
+    approvedDate: timestamp('approved_date'),
     status: applicationStatusEnum('status').notNull().default('pending'),
     rejectionReason: text('rejection_reason'),
     ...timestamps,

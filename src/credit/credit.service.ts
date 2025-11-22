@@ -140,7 +140,7 @@ export class CreditService {
         );
       }
 
-      if (data.requestAmount > credit.limit - credit.available) {
+      if (credit.limit < credit.outstanding + data.requestAmount) {
         throw new BadRequestException(
           'Requested amount exceeds available credit limit.',
         );
