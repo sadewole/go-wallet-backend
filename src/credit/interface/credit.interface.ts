@@ -1,3 +1,5 @@
+import { DBTableType } from '@/libs/database';
+
 export enum CreditStatusEnum {
   ACTIVE = 'active',
   SUSPENDED = 'suspended',
@@ -15,4 +17,23 @@ export enum TransactionTypeEnum {
   DRAWDOWN = 'drawdown',
   REPAYMENT = 'repayment',
   ADJUSTMENT = 'adjustment',
+}
+
+export interface CreditRequestWithUser extends DBTableType<'creditRequests'> {
+  credit: {
+    user: {
+      id: string;
+      email: string;
+    };
+  };
+}
+
+export interface CreditApplicationWithUser
+  extends DBTableType<'creditLimitApplications'> {
+  credit: {
+    user: {
+      id: string;
+      email: string;
+    };
+  };
 }

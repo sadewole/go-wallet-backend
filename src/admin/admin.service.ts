@@ -2,12 +2,7 @@ import { CreditRepositoryManager } from '@/credit/credit-repository.manager';
 import { EmailService } from '@/email/email.service';
 import { DBTableType } from '@/libs/database';
 import { UserRepository } from '@/users/users.repository';
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 @Injectable()
 export class AdminService {
@@ -36,125 +31,27 @@ export class AdminService {
   }
 
   async suspendCreditAccount(creditId: string) {
-    const credit = await this.cRepoManager.credit.findOne({
-      where: (c, { eq }) => eq(c.id, creditId),
-    });
-
-    if (!credit) {
-      throw new NotFoundException('Credit account not found');
-    }
-
-    if (credit.status === 'suspended') {
-      throw new BadRequestException('Credit account is already suspended');
-    }
-    return this.cRepoManager.credit.update(creditId, {
-      status: 'suspended',
-    });
+    return this.cRepoManager.updateCreditStatus(creditId, 'suspended');
   }
 
   async activateCreditAccount(creditId: string) {
-    const credit = await this.cRepoManager.credit.findOne({
-      where: (c, { eq }) => eq(c.id, creditId),
-    });
-
-    if (!credit) {
-      throw new NotFoundException('Credit account not found');
-    }
-
-    if (credit.status === 'active') {
-      throw new BadRequestException('Credit account is already active');
-    }
-    return this.cRepoManager.credit.update(creditId, {
-      status: 'active',
-    });
+    return this.cRepoManager.updateCreditStatus(creditId, 'active');
   }
 
   async getAllCreditApplications() {
-    return this.cRepoManager.creditLimits.findMany({
-      with: {
-        credit: {
-          with: {
-            user: {
-              columns: {
-                id: true,
-                email: true,
-                firstName: true,
-                lastName: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: (application, { desc }) => [desc(application.createdAt)],
-    });
+    return this.cRepoManager.getAllCreditApplications();
   }
 
   async getAllTransactions() {
-    return this.cRepoManager.creditTransactions.findMany({
-      with: {
-        credit: {
-          with: {
-            user: {
-              columns: {
-                id: true,
-                email: true,
-                firstName: true,
-                lastName: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: (transaction, { desc }) => [desc(transaction.createdAt)],
-    });
+    return this.cRepoManager.getAllTransactions();
   }
 
   async getAllCreditRequests() {
-    return this.cRepoManager.creditRequests.findMany({
-      with: {
-        credit: {
-          with: {
-            user: {
-              columns: {
-                id: true,
-                email: true,
-                firstName: true,
-                lastName: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: (request, { desc }) => [desc(request.createdAt)],
-    });
+    return this.cRepoManager.getAllCreditRequests();
   }
 
   async approveCreditRequest(requestId: string, approvedBy: string) {
-    const request = await this.cRepoManager.creditRequests.findOne({
-      where: (req, { eq, and, inArray }) =>
-        and(
-          eq(req.id, requestId),
-          inArray(req.status, ['pending', 'under_review']),
-        ),
-      with: {
-        credit: {
-          with: {
-            user: {
-              columns: {
-                id: true,
-                email: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!request) {
-      throw new NotFoundException(
-        'Credit request not found or cannot be approved',
-      );
-    }
+    const request = await this.cRepoManager.findValidRequest(requestId);
 
     return this.cRepoManager.creditRequests.transaction(async (tx) => {
       const txCreditRepo = this.cRepoManager.credit.withTransaction(tx);
@@ -203,7 +100,7 @@ export class AdminService {
       // send email notification
       await this.emailService.sendNotification({
         to: (request as any).credit.user.email,
-        notificationId: 'creditRejected',
+        notificationId: 'creditRequestApproved',
       });
 
       return {
@@ -221,31 +118,7 @@ export class AdminService {
     rejectedBy: string,
     note: string,
   ) {
-    const request = await this.cRepoManager.creditRequests.findOne({
-      where: (req, { eq, and, inArray }) =>
-        and(
-          eq(req.id, requestId),
-          inArray(req.status, ['pending', 'under_review']),
-        ),
-      with: {
-        credit: {
-          with: {
-            user: {
-              columns: {
-                id: true,
-                email: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!request) {
-      throw new NotFoundException(
-        'Credit request not found or cannot be rejected',
-      );
-    }
+    const request = await this.cRepoManager.findValidRequest(requestId);
 
     return this.cRepoManager.creditRequests.transaction(async (tx) => {
       const txTimelineRepo =
@@ -282,31 +155,8 @@ export class AdminService {
   }
 
   async approveCreditApplication(applicationId: string, approvedBy: string) {
-    const application = await this.cRepoManager.creditLimits.findOne({
-      where: (app, { eq, and, inArray }) =>
-        and(
-          eq(app.id, applicationId),
-          inArray(app.status, ['pending', 'under_review']),
-        ),
-      with: {
-        credit: {
-          with: {
-            user: {
-              columns: {
-                id: true,
-                email: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!application) {
-      throw new NotFoundException(
-        'Credit limit application not found or cannot be approved',
-      );
-    }
+    const application =
+      await this.cRepoManager.findValidApplication(applicationId);
 
     return this.cRepoManager.creditLimits.transaction(async (tx) => {
       const txCreditRepo = this.cRepoManager.credit.withTransaction(tx);
@@ -356,7 +206,7 @@ export class AdminService {
       // send email notification
       await this.emailService.sendNotification({
         to: (application as any).credit.user.email,
-        notificationId: 'creditRejected',
+        notificationId: 'creditApproved',
       });
 
       return {
@@ -375,31 +225,8 @@ export class AdminService {
     rejectedBy: string,
     note: string,
   ) {
-    const application = await this.cRepoManager.creditLimits.findOne({
-      where: (app, { eq, and, inArray }) =>
-        and(
-          eq(app.id, applicationId),
-          inArray(app.status, ['pending', 'under_review']),
-        ),
-      with: {
-        credit: {
-          with: {
-            user: {
-              columns: {
-                id: true,
-                email: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!application) {
-      throw new NotFoundException(
-        'Credit limit application not found or cannot be rejected',
-      );
-    }
+    const application =
+      await this.cRepoManager.findValidApplication(applicationId);
 
     return this.cRepoManager.creditLimits.transaction(async (tx) => {
       const txTimelineRepo =
