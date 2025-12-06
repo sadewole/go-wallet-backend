@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { CreditApplicationDto, CreditRequestDto } from './dtos/credit.dto';
 import payment from '@/core/payment';
+import { StorageService } from '@/storage/storage.service';
 
 @Injectable()
 export class CreditService {
@@ -16,7 +17,10 @@ export class CreditService {
   private readonly creditTransactionsRepository: BaseRepository<'creditTransactions'>;
   private readonly usersRepository: BaseRepository<'users'>;
 
-  constructor(private readonly repositoryFactory: RepositoryFactory) {
+  constructor(
+    private readonly repositoryFactory: RepositoryFactory,
+    private readonly storageService: StorageService,
+  ) {
     this.creditRepository = this.repositoryFactory.create('credits');
     this.creditLimitsRepository = this.repositoryFactory.create(
       'creditLimitApplications',
@@ -52,6 +56,17 @@ export class CreditService {
       if (findExistingApplication) {
         throw new BadRequestException(
           'You already have a pending credit application. Please wait for it to be processed before applying again.',
+        );
+      }
+
+      // validate docs exist in storage
+      const verifyDocs = await Promise.all(
+        data.businessDocs.map((doc) => this.storageService.fileExists(doc.key)),
+      );
+
+      if (verifyDocs.some((doc) => !doc)) {
+        throw new BadRequestException(
+          'One or more documents do not exist in storage.',
         );
       }
 
