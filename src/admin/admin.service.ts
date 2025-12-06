@@ -2,7 +2,8 @@ import { CreditRepositoryManager } from '@/credit/credit-repository.manager';
 import { EmailService } from '@/email/email.service';
 import { DBTableType } from '@/libs/database';
 import { UserRepository } from '@/users/users.repository';
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { AdjustCreditDto } from './dtos/credit.dto';
 
 @Injectable()
 export class AdminService {
@@ -60,6 +61,8 @@ export class AdminService {
         this.cRepoManager.creditTimeline.withTransaction(tx);
       const txRequestRepo =
         this.cRepoManager.creditRequests.withTransaction(tx);
+      const txTransactionsRepo =
+        this.cRepoManager.creditTransactions.withTransaction(tx);
 
       // approve credit request
       await txRequestRepo.update(request.id, {
@@ -83,6 +86,20 @@ export class AdminService {
         available: availableAmount,
         outstanding: newOutstanding,
         spendableAmount: newSpendableAmount,
+      });
+
+      // save transaction
+      await txTransactionsRepo.create({
+        creditId: request.creditId,
+        amount: request.requestAmount,
+        type: 'drawdown',
+        runningBalance: newOutstanding,
+        description: 'Credit request approved (Drawdown)',
+        status: 'success',
+        metadata: {
+          requestId: request.id,
+          approvedBy,
+        },
       });
 
       // save timeline
@@ -260,6 +277,45 @@ export class AdminService {
         rejectedDate: new Date(),
         creditId: application.creditId,
       };
+    });
+  }
+
+  async adjustCredit(creditId: string, data: AdjustCreditDto, adminId: string) {
+    return this.cRepoManager.credit.transaction(async (tx) => {
+      const txCreditRepo = this.cRepoManager.credit.withTransaction(tx);
+      const txTransactionsRepo =
+        this.cRepoManager.creditTransactions.withTransaction(tx);
+
+      const credit = await txCreditRepo.findFirst({
+        where: (credit, { eq }) => eq(credit.id, creditId),
+      });
+
+      if (!credit) {
+        throw new BadRequestException('Credit account not found.');
+      }
+
+      const newOutstanding = credit.outstanding + data.amount;
+      const newAvailable = credit.limit - newOutstanding;
+
+      await txCreditRepo.update(credit.id, {
+        outstanding: newOutstanding < 0 ? 0 : newOutstanding,
+        available: newAvailable > credit.limit ? credit.limit : newAvailable,
+      });
+
+      const transaction = await txTransactionsRepo.create({
+        creditId: credit.id,
+        amount: Math.abs(data.amount),
+        type: 'adjustment',
+        runningBalance: newOutstanding < 0 ? 0 : newOutstanding,
+        description: data.description,
+        status: 'success',
+        metadata: {
+          adjustedBy: adminId,
+          originalAmount: data.amount,
+        },
+      });
+
+      return transaction;
     });
   }
 }

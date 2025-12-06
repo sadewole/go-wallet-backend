@@ -11,7 +11,15 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { createResponse } from '@/core/utils/helpers';
-import { RejectApplicationDto } from './dtos/credit.dto';
+import { AdjustCreditDto, RejectApplicationDto } from './dtos/credit.dto';
+import { ApiOkResponse, ApiOperation } from '@nestjs/swagger';
+import { UserWithCreditResponse } from './dtos/admin-response.dto';
+import {
+  CreditApplicationResponse,
+  CreditRequestResponse,
+  CreditResponse,
+  CreditTransactionResponse,
+} from '@/credit/dtos/credit-response.dto';
 
 @Controller('admin')
 @ApiTags('Admin')
@@ -21,6 +29,11 @@ export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
   @Get('users')
+  @ApiOkResponse({
+    description: 'All users with credit info',
+    type: [UserWithCreditResponse],
+  })
+  @ApiOperation({ summary: 'Get all users' })
   async getAllUsers() {
     const data = await this.adminService.getAllUsers();
     return createResponse({
@@ -31,6 +44,11 @@ export class AdminController {
   }
 
   @Patch('credit/:id/suspend')
+  @ApiOkResponse({
+    description: 'Credit account suspended',
+    type: CreditResponse,
+  })
+  @ApiOperation({ summary: 'Suspend credit account' })
   async suspendCreditAccount(@Param('id') creditId: string) {
     const data = await this.adminService.suspendCreditAccount(creditId);
     return createResponse({
@@ -41,6 +59,11 @@ export class AdminController {
   }
 
   @Patch('credit/:id/activate')
+  @ApiOkResponse({
+    description: 'Credit account activated',
+    type: CreditResponse,
+  })
+  @ApiOperation({ summary: 'Activate credit account' })
   async activateCreditAccount(@Param('id') creditId: string) {
     const data = await this.adminService.activateCreditAccount(creditId);
     return createResponse({
@@ -51,6 +74,11 @@ export class AdminController {
   }
 
   @Get('credit/applications')
+  @ApiOkResponse({
+    description: 'All credit applications',
+    type: [CreditApplicationResponse],
+  })
+  @ApiOperation({ summary: 'Get all credit applications' })
   async getAllCreditApplications() {
     const data = await this.adminService.getAllCreditApplications();
     return createResponse({
@@ -61,6 +89,11 @@ export class AdminController {
   }
 
   @Get('credit/transactions')
+  @ApiOkResponse({
+    description: 'All credit transactions',
+    type: [CreditTransactionResponse],
+  })
+  @ApiOperation({ summary: 'Get all credit transactions' })
   async getAllTransactions() {
     const data = await this.adminService.getAllTransactions();
     return createResponse({
@@ -71,6 +104,11 @@ export class AdminController {
   }
 
   @Get('credit/requests')
+  @ApiOkResponse({
+    description: 'All credit requests',
+    type: [CreditRequestResponse],
+  })
+  @ApiOperation({ summary: 'Get all credit requests' })
   async getAllCreditRequests() {
     const data = await this.adminService.getAllCreditRequests();
     return createResponse({
@@ -81,6 +119,11 @@ export class AdminController {
   }
 
   @Patch('credit/request/:id/approve')
+  @ApiOkResponse({
+    description: 'Credit request approved',
+    type: CreditRequestResponse,
+  })
+  @ApiOperation({ summary: 'Approve credit request' })
   async approveCreditRequest(@Param('id') requestId: string, @Req() req) {
     const data = await this.adminService.approveCreditRequest(
       requestId,
@@ -94,6 +137,11 @@ export class AdminController {
   }
 
   @Patch('credit/request/:id/reject')
+  @ApiOkResponse({
+    description: 'Credit request rejected',
+    type: CreditRequestResponse,
+  })
+  @ApiOperation({ summary: 'Reject credit request' })
   async rejectCreditRequest(
     @Param('id') requestId: string,
     @Req() req,
@@ -112,6 +160,11 @@ export class AdminController {
   }
 
   @Patch('credit/application/:id/approve')
+  @ApiOkResponse({
+    description: 'Credit application approved',
+    type: CreditApplicationResponse,
+  })
+  @ApiOperation({ summary: 'Approve credit application' })
   async approveCreditApplication(
     @Param('id') applicationId: string,
     @Req() req,
@@ -128,6 +181,11 @@ export class AdminController {
   }
 
   @Patch('credit/application/:id/reject')
+  @ApiOkResponse({
+    description: 'Credit application rejected',
+    type: CreditApplicationResponse,
+  })
+  @ApiOperation({ summary: 'Reject credit application' })
   async rejectCreditApplication(
     @Param('id') applicationId: string,
     @Req() req,
@@ -141,6 +199,29 @@ export class AdminController {
     return createResponse({
       success: true,
       message: 'Credit application rejected successfully',
+      data,
+    });
+  }
+
+  @Patch('credit/:id/adjust')
+  @ApiOkResponse({
+    description: 'Credit adjusted',
+    type: CreditTransactionResponse,
+  })
+  @ApiOperation({ summary: 'Adjust credit account' })
+  async adjustCredit(
+    @Param('id') creditId: string,
+    @Req() req,
+    @Body() body: AdjustCreditDto,
+  ) {
+    const data = await this.adminService.adjustCredit(
+      creditId,
+      body,
+      req.user.id,
+    );
+    return createResponse({
+      success: true,
+      message: 'Credit adjusted successfully',
       data,
     });
   }
