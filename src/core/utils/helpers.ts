@@ -1,3 +1,5 @@
+import { Response } from 'express';
+
 export function excludeProps<T, Key extends keyof T>(
   field: T,
   keys: Key[],
@@ -63,4 +65,25 @@ export function isValidContentType(contentType: string): boolean {
   ];
 
   return allowedTypes.includes(contentType);
+}
+
+export function setAuthCookies(
+  res: Response,
+  accessToken: string,
+  refreshToken: string,
+) {
+  res.cookie('access_token', accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 3600000, // 1hr
+  });
+
+  res.cookie('refresh_token', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    path: '/auth/refresh',
+  });
 }

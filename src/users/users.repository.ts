@@ -9,6 +9,7 @@ import {
 import { CreateUserDto } from './dtos/user.dto';
 import { PasswordService } from '@/auth/password.service';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import { excludeProps } from '@/core/utils/helpers';
 
 @Injectable()
 export class UserRepository extends BaseRepository<'users'> {
@@ -51,7 +52,6 @@ export class UserRepository extends BaseRepository<'users'> {
       throw new NotFoundException('User not found');
     }
 
-    delete user.password;
-    return user;
+    return excludeProps(user, ['password', 'refreshToken']);
   }
 }

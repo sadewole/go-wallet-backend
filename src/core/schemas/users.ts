@@ -23,6 +23,7 @@ export const users = pgTable('users', {
   isVerified: boolean('isVerified').default(false),
   lastLogin: timestamp('last_login'),
   role: roleEnum('role').default('user').notNull(),
+  refreshToken: text('refresh_token'),
   creditId: uuid('credit_id').references((): AnyPgColumn => credits.id),
   ...timestamps,
 });

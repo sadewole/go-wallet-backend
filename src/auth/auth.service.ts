@@ -12,7 +12,11 @@ import type { DBTableType } from '@/libs/database';
 import { PasswordService } from './password.service';
 import { LoginDto, ResendCodeDto, VerifyEmailDto } from './dtos/auth.dto';
 import { CacheService } from '@/libs/cache/cache.service';
-import { generateExpiryCode, REDIS_KEYS } from '@/core/utils/helpers';
+import {
+  excludeProps,
+  generateExpiryCode,
+  REDIS_KEYS,
+} from '@/core/utils/helpers';
 import { EmailService } from '@/email/email.service';
 import { CreditRepositoryManager } from '@/credit/credit-repository.manager';
 
@@ -30,7 +34,7 @@ export class AuthService {
   async login(user: DBTableType<'users'>) {
     const loginTime = new Date();
     await this.userRepository.update(user.id, { lastLogin: loginTime });
-    return this.signedUserToken(user);
+    return await this.signedUserToken(user);
   }
 
   async register(body: CreateUserDto) {
@@ -135,12 +139,50 @@ export class AuthService {
     });
   }
 
-  signedUserToken(user: DBTableType<'users'>) {
+  async signedUserToken(user: DBTableType<'users'>) {
     const payload = { email: user.email, sub: user.id };
+    const accessToken = this.jwtService.sign(payload);
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+
+    await this.updateRefreshToken(user.id, refreshToken);
+
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: accessToken,
+      refresh_token: refreshToken,
       isVerified: user.isVerified,
     };
+  }
+
+  async updateRefreshToken(userId: string, refreshToken: string) {
+    const hashedRefreshToken =
+      await this.passwordService.hashPassword(refreshToken);
+    await this.userRepository.update(userId, {
+      refreshToken: hashedRefreshToken,
+    });
+  }
+
+  async refreshTokens(userId: string, refreshToken: string) {
+    const user = await this.userRepository.findFirst({
+      where: (user, { eq }) => eq(user.id, userId),
+    });
+    if (!user || !user.refreshToken) {
+      throw new UnauthorizedException('Access Denied');
+    }
+
+    const refreshTokenMatches = await this.passwordService.comparePassword(
+      refreshToken,
+      user.refreshToken,
+    );
+
+    if (!refreshTokenMatches) {
+      throw new UnauthorizedException('Access Denied');
+    }
+
+    return this.signedUserToken(user);
+  }
+
+  async logout(userId: string) {
+    await this.userRepository.update(userId, { refreshToken: null });
   }
 
   async validateLogin(body: LoginDto): Promise<DBTableType<'users'>> {
@@ -160,7 +202,9 @@ export class AuthService {
       throw new UnauthorizedException('Invalid crendentials');
     }
 
-    delete user.password;
-    return user;
+    return excludeProps(user, [
+      'password',
+      'refreshToken',
+    ]) as DBTableType<'users'>;
   }
 }

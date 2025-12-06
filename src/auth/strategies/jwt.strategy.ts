@@ -4,6 +4,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UserRepository } from '@/users/users.repository';
 import enviroments from '@/core/utils/enviroments';
+import { excludeProps } from '@/core/utils/helpers';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
@@ -32,7 +33,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     if (!user) {
       throw new UnauthorizedException();
     }
-    delete user.password;
-    return user;
+
+    return excludeProps(user, ['password', 'refreshToken']);
   }
 }

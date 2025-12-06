@@ -18,6 +18,7 @@ import {
   VerifyEmailDto,
 } from './dtos/auth.dto';
 import { JwtAuthGuard } from '@/core/guards';
+import { RefreshTokenGuard } from '@/core/guards';
 import {
   ApiBearerAuth,
   ApiOkResponse,
@@ -25,7 +26,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { UserResponseDto } from '@/users/dtos/user-response.dto';
-import { createResponse } from '@/core/utils/helpers';
+import { createResponse, setAuthCookies } from '@/core/utils/helpers';
 
 @Controller('auth')
 @ApiTags('Auth')
@@ -57,12 +58,7 @@ export class AuthController {
   async register(@Body() body: CreateUserDto, @Res() res) {
     const data = await this.authService.register(body);
 
-    res.cookie('access_token', data.access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 3600000,
-    });
+    setAuthCookies(res, data.access_token, data.refresh_token);
 
     return res.json({
       success: true,
@@ -81,12 +77,7 @@ export class AuthController {
     const user = await this.authService.validateLogin(body);
     const data = await this.authService.login(user);
 
-    res.cookie('access_token', data.access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 3600000, // 1hr
-    });
+    setAuthCookies(res, data.access_token, data.refresh_token);
 
     return res.json({
       success: true,
@@ -96,9 +87,33 @@ export class AuthController {
   }
 
   @Post('logout')
-  async logout(@Res() res) {
+  @UseGuards(JwtAuthGuard)
+  async logout(@Req() req, @Res() res) {
+    await this.authService.logout(req.user.id);
     res.clearCookie('access_token');
+    res.clearCookie('refresh_token', { path: '/auth/refresh' });
     return res.send({ message: 'Logout successful' });
+  }
+
+  @Post('refresh')
+  @UseGuards(RefreshTokenGuard)
+  @ApiOkResponse({
+    description: 'Refresh token response',
+    type: AuthResponse,
+  })
+  @ApiOperation({ summary: 'Refresh access token' })
+  async refreshTokens(@Req() req, @Res() res) {
+    const userId = req.user.sub;
+    const refreshToken = req.user.refreshToken;
+    const data = await this.authService.refreshTokens(userId, refreshToken);
+
+    setAuthCookies(res, data.access_token, data.refresh_token);
+
+    return res.json({
+      success: true,
+      message: 'Tokens refreshed successfully',
+      data,
+    });
   }
 
   @Post('resend-code')
