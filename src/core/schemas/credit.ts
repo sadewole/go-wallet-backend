@@ -31,6 +31,11 @@ export const timelineEntityTypeEnum = pgEnum('timeline_entity_type', [
   'credit_application',
   'credit_request',
 ]);
+export const transactionStatusEnum = pgEnum('transaction_status', [
+  'pending',
+  'success',
+  'failed',
+]);
 
 export const credits = pgTable(
   'credits',
@@ -149,6 +154,7 @@ export const creditTransactions = pgTable(
     runningBalance: integer('running_balance').notNull(),
     description: text('description'),
     reference: text('reference').unique(),
+    status: transactionStatusEnum('status').notNull().default('success'),
     metadata: json('metadata'),
     ...timestamps,
   },

@@ -1,0 +1,2 @@
+CREATE TYPE "public"."transaction_status" AS ENUM('pending', 'success', 'failed');--> statement-breakpoint
+ALTER TABLE "credit_transactions" ADD COLUMN "status" "transaction_status" DEFAULT 'success' NOT NULL;

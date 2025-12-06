@@ -184,6 +184,9 @@ export class CreditTransactionResponse {
   @ApiProperty({ example: { some: 'data' } })
   metadata: object;
 
+  @ApiProperty({ example: 'success' })
+  status: string;
+
   @ApiProperty({
     description: 'Creation timestamp',
     example: '2025-10-01T12:00:00.000Z',

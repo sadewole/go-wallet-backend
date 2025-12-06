@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { CreditApplicationDto, CreditRequestDto } from './dtos/credit.dto';
+import payment from '@/core/payment';
 
 @Injectable()
 export class CreditService {
@@ -13,6 +14,7 @@ export class CreditService {
   private readonly creditRequestsRepository: BaseRepository<'creditRequests'>;
   private readonly creditTimelineRepository: BaseRepository<'creditTimeline'>;
   private readonly creditTransactionsRepository: BaseRepository<'creditTransactions'>;
+  private readonly usersRepository: BaseRepository<'users'>;
 
   constructor(private readonly repositoryFactory: RepositoryFactory) {
     this.creditRepository = this.repositoryFactory.create('credits');
@@ -25,6 +27,7 @@ export class CreditService {
       this.repositoryFactory.create('creditTimeline');
     this.creditTransactionsRepository =
       this.repositoryFactory.create('creditTransactions');
+    this.usersRepository = this.repositoryFactory.create('users');
   }
 
   async getCredit(userId: string) {
@@ -175,6 +178,121 @@ export class CreditService {
     const creditId = credit.id;
     return this.creditTransactionsRepository.findMany({
       where: (transaction, { eq }) => eq(transaction.creditId, creditId),
+    });
+  }
+
+  async initiateRepayment(userId: string, amount: number) {
+    const credit = await this.creditRepository.findFirst({
+      where: (credit, { eq }) => eq(credit.userId, userId),
+    });
+
+    if (!credit) {
+      throw new BadRequestException('Credit account not found.');
+    }
+
+    if (amount <= 0) {
+      throw new BadRequestException('Amount must be greater than 0');
+    }
+
+    const user = await this.usersRepository.findFirst({
+      where: (user, { eq }) => eq(user.id, userId),
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found.');
+    }
+
+    const paymentResult = await payment.initiateTransaction({
+      email: user.email,
+      amount: amount.toString(),
+    });
+
+    await this.creditTransactionsRepository.create({
+      creditId: credit.id,
+      amount,
+      type: 'repayment',
+      runningBalance: credit.outstanding,
+      description: 'Credit repayment initiated',
+      reference: paymentResult.data.reference,
+      status: 'pending',
+      metadata: paymentResult.data,
+    });
+
+    return paymentResult;
+  }
+
+  async verifyRepayment(userId: string, reference: string) {
+    const paymentVerification = await payment.verifyTransaction(reference);
+
+    if (paymentVerification.data.status !== 'success') {
+      // Update transaction to failed if it exists
+      const existingTransaction =
+        await this.creditTransactionsRepository.findFirst({
+          where: (transaction, { eq }) => eq(transaction.reference, reference),
+        });
+
+      if (existingTransaction) {
+        await this.creditTransactionsRepository.update(existingTransaction.id, {
+          status: 'failed',
+          metadata: paymentVerification.data,
+        });
+      }
+      throw new BadRequestException('Payment verification failed.');
+    }
+
+    const amount = paymentVerification.data.amount / 100; // Paystack amount is in kobo
+
+    return this.creditRepository.transaction(async (tx) => {
+      const txCreditRepo = this.creditRepository.withTransaction(tx);
+      const txCreditTransactionsRepo =
+        this.creditTransactionsRepository.withTransaction(tx);
+
+      const credit = await txCreditRepo.findFirst({
+        where: (credit, { eq }) => eq(credit.userId, userId),
+      });
+
+      if (!credit) {
+        throw new BadRequestException('Credit account not found.');
+      }
+
+      const existingTransaction = await txCreditTransactionsRepo.findFirst({
+        where: (transaction, { eq }) => eq(transaction.reference, reference),
+      });
+
+      if (existingTransaction && existingTransaction.status === 'success') {
+        throw new BadRequestException('Transaction already processed.');
+      }
+
+      const newOutstanding = credit.outstanding - amount;
+      const newAvailable = credit.limit - newOutstanding;
+
+      await txCreditRepo.update(credit.id, {
+        outstanding: newOutstanding < 0 ? 0 : newOutstanding,
+        available: newAvailable > credit.limit ? credit.limit : newAvailable,
+      });
+
+      if (existingTransaction) {
+        await txCreditTransactionsRepo.update(existingTransaction.id, {
+          status: 'success',
+          runningBalance: newOutstanding < 0 ? 0 : newOutstanding,
+          description: 'Credit repayment success',
+          metadata: paymentVerification.data,
+        });
+        return existingTransaction;
+      } else {
+        // Fallback if transaction wasn't recorded at initiation (shouldn't happen usually)
+        const transaction = await txCreditTransactionsRepo.create({
+          creditId: credit.id,
+          amount,
+          type: 'repayment',
+          runningBalance: newOutstanding < 0 ? 0 : newOutstanding,
+          description: 'Credit repayment success',
+          reference,
+          status: 'success',
+          metadata: paymentVerification.data,
+        });
+        return transaction;
+      }
     });
   }
 }

@@ -16,7 +16,12 @@ import {
 } from '@nestjs/swagger';
 import { CreditService } from './credit.service';
 import { JwtAuthGuard, VerifiedUserGuard } from '@/core/guards';
-import { CreditApplicationDto, CreditRequestDto } from './dtos/credit.dto';
+import {
+  CreditApplicationDto,
+  CreditRepaymentDto,
+  CreditRequestDto,
+  VerifyRepaymentDto,
+} from './dtos/credit.dto';
 import { createResponse } from '@/core/utils/helpers';
 import {
   CreditApplicationResponse,
@@ -140,6 +145,40 @@ export class CreditController {
     return createResponse({
       success: true,
       message: 'Credit transactions retrieved successfully',
+      data,
+    });
+  }
+
+  @Post('repay/initiate')
+  @ApiOkResponse({
+    description: 'Repayment initiated',
+  })
+  @ApiOperation({ summary: 'Initiate credit repayment' })
+  async initiateRepayment(@Body() body: CreditRepaymentDto, @Req() req) {
+    const data = await this.creditService.initiateRepayment(
+      req.user.id,
+      body.amount,
+    );
+    return createResponse({
+      success: true,
+      message: 'Repayment initiated successfully',
+      data,
+    });
+  }
+
+  @Post('repay/verify')
+  @ApiOkResponse({
+    description: 'Repayment verified',
+  })
+  @ApiOperation({ summary: 'Verify credit repayment' })
+  async verifyRepayment(@Body() body: VerifyRepaymentDto, @Req() req) {
+    const data = await this.creditService.verifyRepayment(
+      req.user.id,
+      body.reference,
+    );
+    return createResponse({
+      success: true,
+      message: 'Repayment verified successfully',
       data,
     });
   }

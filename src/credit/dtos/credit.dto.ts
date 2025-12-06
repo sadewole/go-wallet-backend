@@ -38,3 +38,16 @@ export class CreditRequestDto {
   @ApiProperty()
   requestAmount: number;
 }
+
+export class CreditRepaymentDto {
+  @IsNumber()
+  @Min(1, { message: 'Repayment amount must be at least 1' })
+  @ApiProperty()
+  amount: number;
+}
+
+export class VerifyRepaymentDto {
+  @IsString()
+  @ApiProperty()
+  reference: string;
+}
