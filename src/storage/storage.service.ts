@@ -19,15 +19,22 @@ export class StorageService {
   private bucketName: string;
 
   constructor(private configService: ConfigService) {
-    this.storage = new Storage({
-      projectId: this.configService.get(enviroments.GCP.PROJECT_ID),
-      credentials: {
-        client_email: this.configService.get(enviroments.GCP.CLIENT_EMAIL),
-        private_key: this.configService
-          .get(enviroments.GCP.PRIVATE_KEY)
-          .replace(/\\n/g, '\n'),
-      },
-    });
+    const projectId = this.configService.get(enviroments.GCP.PROJECT_ID);
+    const clientEmail = this.configService.get(enviroments.GCP.CLIENT_EMAIL);
+    const privateKey = this.configService.get(enviroments.GCP.PRIVATE_KEY);
+
+    if (clientEmail && privateKey) {
+      this.storage = new Storage({
+        projectId,
+        credentials: {
+          client_email: clientEmail,
+          private_key: privateKey.replace(/\\n/g, '\n'),
+        },
+      });
+    } else {
+      this.storage = new Storage({ projectId });
+    }
+
     this.bucketName = this.configService.get(enviroments.GCP.BUCKET_NAME);
   }
 

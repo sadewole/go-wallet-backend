@@ -5,13 +5,17 @@ import {
   Delete,
   Param,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { StorageService } from './storage.service';
 import { GeneratePresignedUrlDto } from './dtos/presigned.dto';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '@/core/guards';
 
 @Controller('storage')
 @ApiTags('Storage')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 export class StorageController {
   constructor(private storageService: StorageService) {}
 
