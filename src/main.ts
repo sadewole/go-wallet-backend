@@ -41,11 +41,12 @@ async function bootstrap() {
     },
   });
 
-  await app.listen(3000);
+  const port = process.env.PORT || 8080;
+  await app.listen(port, '0.0.0.0');
 
   const url = await app.getUrl();
 
-  Logger.log(`🚀 Application is running on: ${url}/v1`);
-  Logger.log(`Swagger Docs is running on: ${url}/api/docs`);
+  Logger.log(`🚀 Application is running on: ${url}/v1 (Port: ${port})`);
+  Logger.log(`📚 Swagger Docs is running on: ${url}/api/docs`);
 }
 bootstrap();

@@ -55,3 +55,4 @@ pids
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 noble-maxim-436216-f2-a66bf3f29eaf.json
+cloud.env
