@@ -4,6 +4,7 @@ import {
   CreditStatusEnum,
   TransactionTypeEnum,
 } from '../interface/credit.interface';
+import { BusinessDoc } from './credit.dto';
 
 export class CreditResponse {
   @ApiProperty({
@@ -54,8 +55,8 @@ export class CreditApplicationResponse {
   @ApiProperty({ example: '12345678901' })
   bvn: string;
 
-  @ApiProperty({ type: [Object] })
-  businessDocs: { key: string; url: string }[];
+  @ApiProperty({ type: [BusinessDoc] })
+  businessDocs: BusinessDoc[];
 
   @ApiProperty({ example: 500000 })
   applicationAmount: number;

@@ -187,7 +187,7 @@ export class CreditRepositoryManager {
   }
 
   async getAllCreditRequests() {
-    return this.creditRequests.findMany({
+    return await this.creditRequests.findMany({
       with: {
         credit: {
           with: {

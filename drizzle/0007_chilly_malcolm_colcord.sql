@@ -1,0 +1,1 @@
+ALTER TABLE "limit_applications" ADD COLUMN "purpose_of_loan" text;

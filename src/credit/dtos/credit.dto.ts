@@ -1,5 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, IsString, IsOptional, Min, Max } from 'class-validator';
+import {
+  IsNumber,
+  IsString,
+  IsOptional,
+  Min,
+  Max,
+  IsArray,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class BusinessDoc {
   @IsString()
@@ -23,7 +32,9 @@ export class CreditApplicationDto {
   applicationAmount: number;
 
   @ApiProperty({ type: [BusinessDoc] })
-  @IsString({ each: true })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BusinessDoc)
   businessDocs: BusinessDoc[];
 
   @IsString()

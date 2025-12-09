@@ -71,7 +71,7 @@ export const creditLimitApplications = pgTable(
     approvedDate: timestamp('approved_date'),
     status: applicationStatusEnum('status').notNull().default('pending'),
     rejectionReason: text('rejection_reason'),
-    purposeOfLoan: text('rejection_reason'),
+    purposeOfLoan: text('purpose_of_loan'),
     creditId: uuid('credit_id')
       .references(() => credits.id, { onDelete: 'cascade' })
       .notNull(),
@@ -108,7 +108,7 @@ export const creditRequests = pgTable(
     index('credit_request_status_idx').on(table.status),
     index('credit_request_created_at_idx').on(table.createdAt),
     // Prevent duplicate pending requests from same user
-    uniqueIndex('credit_request_user_pending_idx')
+    uniqueIndex('credit_request_credit_pending_idx')
       .on(table.creditId)
       .where(sql`status = 'pending'`),
   ],
