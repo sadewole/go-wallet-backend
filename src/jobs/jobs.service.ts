@@ -17,9 +17,8 @@ export class JobsService {
   /**
    * Overdue Payment Reminders - Runs weekly on Monday at 9 AM
    * Sends email reminders to users with outstanding balances
-   * Weekly schedule reduces email fatigue for users
    */
-  @Cron('0 9 * * 1') // Every Monday at 9 AM
+  @Cron('0 9 * * 1')
   async handleOverdueReminders() {
     this.logger.log('Starting overdue payment reminders job...');
     await this.overdueQueue.add(JOB_PROCESSES.PROCESS_OVERDUE_REMINDERS, {
@@ -30,7 +29,6 @@ export class JobsService {
   /**
    * Stale Session Cleanup - Runs daily at 2 AM
    * Clears expired refresh tokens from users table
-   * Daily schedule keeps database clean without user impact
    */
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
   async handleStaleSessionCleanup() {
@@ -43,9 +41,8 @@ export class JobsService {
   /**
    * Credit Limit Review - Runs weekly on Monday at 10 AM
    * Alerts admins about applications stuck in pending/under_review
-   * Weekly digest prevents admin notification spam
    */
-  @Cron('0 10 * * 1') // Every Monday at 10 AM
+  @Cron('0 10 * * 1')
   async handleCreditLimitReview() {
     this.logger.log('Starting credit limit review job...');
     await this.creditReviewQueue.add(JOB_PROCESSES.PROCESS_CREDIT_REVIEW, {
