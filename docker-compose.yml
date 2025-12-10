@@ -4,7 +4,7 @@ services:
   api:
     build: .
     ports:
-      - "${PORT:-3000}:3000"
+      - "${PORT:-8080}:8080"
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379

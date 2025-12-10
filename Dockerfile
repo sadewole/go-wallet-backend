@@ -15,6 +15,7 @@ FROM node:20-slim AS runner
 WORKDIR /app
 
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/templates ./templates
 COPY --from=builder /app/package*.json ./
 
 RUN npm ci --omit=dev
