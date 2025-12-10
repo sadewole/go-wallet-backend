@@ -47,6 +47,18 @@ export const notificationType = {
     header: 'Credit request update',
     body: 'We regret to inform you that your credit request has been rejected. For more details, please log in to your Go-wallet account.',
   },
+  overduePaymentReminder: {
+    showCode: false,
+    subject: 'Payment Reminder: Outstanding Balance on Your Account',
+    header: 'Payment Reminder',
+    body: 'This is a friendly reminder that you have an outstanding balance on your Go-wallet credit account. Please log in to make a payment and avoid any potential late fees.',
+  },
+  staleCreditReviewAlert: {
+    showCode: false,
+    subject: 'Action Required: Pending Credit Applications Need Review',
+    header: 'Credit Applications Awaiting Review',
+    body: 'The following credit applications and requests have been pending for an extended period and require your attention. Please log in to the admin panel to review them.',
+  },
 } as const;
 
 export type NotificationType = keyof typeof notificationType;

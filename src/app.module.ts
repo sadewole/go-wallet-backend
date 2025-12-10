@@ -11,6 +11,7 @@ import { CacheModule } from './libs/cache/cache.module';
 import { CreditModule } from './credit/credit.module';
 import { AdminModule } from './admin/admin.module';
 import { StorageModule } from './storage/storage.module';
+import { JobsModule } from './jobs/jobs.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { StorageModule } from './storage/storage.module';
     StorageModule,
     AdminModule,
     SeedModule,
+    JobsModule,
   ],
   controllers: [AppController],
   providers: [
