@@ -7,6 +7,7 @@ import {
   Post,
   Query,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -177,15 +178,11 @@ export class CreditController {
 
   @Get('repay/verify')
   @ApiExcludeEndpoint()
-  async verifyRepayment(@Query() query: VerifyRepaymentDto, @Req() req) {
-    const data = await this.creditService.verifyRepayment(
-      req.user.id,
-      query.reference,
-    );
-    return createResponse({
+  async verifyRepayment(@Query() query: VerifyRepaymentDto, @Res() res) {
+    await this.creditService.verifyRepayment(query.reference);
+    res.send({
       success: true,
       message: 'Repayment verified successfully',
-      data,
     });
   }
 }

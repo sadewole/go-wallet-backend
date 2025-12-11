@@ -242,7 +242,7 @@ export class CreditService {
     return paymentResult;
   }
 
-  async verifyRepayment(userId: string, reference: string) {
+  async verifyRepayment(reference: string) {
     const paymentVerification = await payment.verifyTransaction(reference);
 
     if (paymentVerification.data.status !== 'success') {
@@ -268,20 +268,20 @@ export class CreditService {
       const txCreditTransactionsRepo =
         this.creditTransactionsRepository.withTransaction(tx);
 
-      const credit = await txCreditRepo.findFirst({
-        where: (credit, { eq }) => eq(credit.userId, userId),
-      });
-
-      if (!credit) {
-        throw new BadRequestException('Credit account not found.');
-      }
-
       const existingTransaction = await txCreditTransactionsRepo.findFirst({
         where: (transaction, { eq }) => eq(transaction.reference, reference),
       });
 
       if (existingTransaction && existingTransaction.status === 'success') {
         throw new BadRequestException('Transaction already processed.');
+      }
+
+      const credit = await txCreditRepo.findFirst({
+        where: (credit, { eq }) => eq(credit.id, existingTransaction.creditId),
+      });
+
+      if (!credit) {
+        throw new BadRequestException('Credit account not found.');
       }
 
       const newOutstanding = credit.outstanding - amount;
@@ -292,28 +292,13 @@ export class CreditService {
         available: newAvailable > credit.limit ? credit.limit : newAvailable,
       });
 
-      if (existingTransaction) {
-        await txCreditTransactionsRepo.update(existingTransaction.id, {
-          status: 'success',
-          runningBalance: newOutstanding < 0 ? 0 : newOutstanding,
-          description: 'Credit repayment success',
-          metadata: paymentVerification.data,
-        });
-        return existingTransaction;
-      } else {
-        // Fallback if transaction wasn't recorded at initiation (shouldn't happen usually)
-        const transaction = await txCreditTransactionsRepo.create({
-          creditId: credit.id,
-          amount,
-          type: 'repayment',
-          runningBalance: newOutstanding < 0 ? 0 : newOutstanding,
-          description: 'Credit repayment success',
-          reference,
-          status: 'success',
-          metadata: paymentVerification.data,
-        });
-        return transaction;
-      }
+      await txCreditTransactionsRepo.update(existingTransaction.id, {
+        status: 'success',
+        runningBalance: newOutstanding < 0 ? 0 : newOutstanding,
+        description: 'Credit repayment success',
+        metadata: paymentVerification.data,
+      });
+      return existingTransaction;
     });
   }
 }
