@@ -1,0 +1,53 @@
+name: Deploy to Cloud Run (go-wallet)
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: ${{ secrets.PROJECT_ID }}
+  REGION: ${{ secrets.REGION }}
+  REPOSITORY: ${{ secrets.REPOSITORY }}
+  SERVICE_NAME: ${{ secrets.SERVICE_NAME }}
+  IMAGE: ${{ secrets.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ secrets.REPOSITORY }}/${{ secrets.SERVICE_NAME }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Pull repo
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Authenticate to GCP using service account key
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      # Install gcloud CLI
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # Authenticate Docker to Artifact Registry
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker $REGION-docker.pkg.dev
+
+      # Build Docker image
+      - name: Build Docker Image
+        run: docker build -t $IMAGE:latest .
+
+      # Push image to Artifact Registry
+      - name: Push Image
+        run: docker push $IMAGE:latest
+
+      # Deploy to Cloud Run
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy $SERVICE_NAME \
+            --image $IMAGE:latest \
+            --region $REGION \
+            --platform managed \
+            --allow-unauthenticated
