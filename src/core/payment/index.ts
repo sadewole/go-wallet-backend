@@ -1,4 +1,4 @@
-const paymentHostname = 'api.paystack.co';
+const paymentHostname = 'https://api.paystack.co';
 
 const initiateTransaction = async (data: { email: string; amount: string }) => {
   const response = await fetch(`${paymentHostname}/transaction/initialize`, {

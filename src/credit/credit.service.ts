@@ -205,8 +205,14 @@ export class CreditService {
       throw new BadRequestException('Credit account not found.');
     }
 
-    if (amount <= 0) {
-      throw new BadRequestException('Amount must be greater than 0');
+    if (amount < 1000) {
+      throw new BadRequestException('Amount must be greater than 1000');
+    }
+
+    if (amount > credit.outstanding) {
+      throw new BadRequestException(
+        'Amount must be less than or equal to outstanding balance',
+      );
     }
 
     const user = await this.usersRepository.findFirst({
@@ -219,7 +225,7 @@ export class CreditService {
 
     const paymentResult = await payment.initiateTransaction({
       email: user.email,
-      amount: amount.toString(),
+      amount: (amount * 100).toString(),
     });
 
     await this.creditTransactionsRepository.create({

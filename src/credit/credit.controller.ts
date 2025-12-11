@@ -5,11 +5,13 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiExcludeEndpoint,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -34,11 +36,11 @@ import {
 @Controller('credit')
 @ApiTags('Credit')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, VerifiedUserGuard)
 export class CreditController {
   constructor(private readonly creditService: CreditService) {}
 
   @Get()
+  @UseGuards(JwtAuthGuard, VerifiedUserGuard)
   @ApiOkResponse({
     description: 'Get credit account',
     type: CreditResponse,
@@ -54,6 +56,7 @@ export class CreditController {
   }
 
   @Post('apply')
+  @UseGuards(JwtAuthGuard, VerifiedUserGuard)
   @ApiOkResponse({
     description: 'Credit limit increase application created',
     type: CreditApplicationResponse,
@@ -72,6 +75,7 @@ export class CreditController {
   }
 
   @Get('apply')
+  @UseGuards(JwtAuthGuard, VerifiedUserGuard)
   @ApiOkResponse({
     description: 'Credit limit applications',
     type: [CreditApplicationResponse],
@@ -87,6 +91,7 @@ export class CreditController {
   }
 
   @Get('apply/:id')
+  @UseGuards(JwtAuthGuard, VerifiedUserGuard)
   @ApiOkResponse({
     description: 'Credit limit application',
     type: CreditApplicationWithTimelineResponse,
@@ -102,6 +107,7 @@ export class CreditController {
   }
 
   @Patch('apply/:id')
+  @UseGuards(JwtAuthGuard, VerifiedUserGuard)
   @ApiOkResponse({
     description: 'Credit limit updated sucessfully',
     type: CreditApplicationResponse,
@@ -120,6 +126,7 @@ export class CreditController {
   }
 
   @Post('request')
+  @UseGuards(JwtAuthGuard, VerifiedUserGuard)
   @ApiOkResponse({
     description: 'Credit requested',
     type: CreditRequestResponse,
@@ -135,6 +142,7 @@ export class CreditController {
   }
 
   @Get('transactions')
+  @UseGuards(JwtAuthGuard, VerifiedUserGuard)
   @ApiOkResponse({
     description: 'All credit transactions',
     type: [CreditTransactionResponse],
@@ -150,6 +158,7 @@ export class CreditController {
   }
 
   @Post('repay/initiate')
+  @UseGuards(JwtAuthGuard, VerifiedUserGuard)
   @ApiOkResponse({
     description: 'Repayment initiated',
   })
@@ -166,15 +175,12 @@ export class CreditController {
     });
   }
 
-  @Post('repay/verify')
-  @ApiOkResponse({
-    description: 'Repayment verified',
-  })
-  @ApiOperation({ summary: 'Verify credit repayment' })
-  async verifyRepayment(@Body() body: VerifyRepaymentDto, @Req() req) {
+  @Get('repay/verify')
+  @ApiExcludeEndpoint()
+  async verifyRepayment(@Query() query: VerifyRepaymentDto, @Req() req) {
     const data = await this.creditService.verifyRepayment(
       req.user.id,
-      body.reference,
+      query.reference,
     );
     return createResponse({
       success: true,

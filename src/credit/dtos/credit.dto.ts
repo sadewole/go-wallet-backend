@@ -27,7 +27,7 @@ export class CreditApplicationDto {
 
   @IsNumber()
   @ApiProperty()
-  @Min(0, { message: 'Application amount must be a positive number' })
+  @Min(1000, { message: 'Application amount must be a positive number' })
   @Max(1000000, { message: 'Application amount exceeds the maximum limit' })
   applicationAmount: number;
 
@@ -52,7 +52,7 @@ export class CreditRequestDto {
 
 export class CreditRepaymentDto {
   @IsNumber()
-  @Min(1, { message: 'Repayment amount must be at least 1' })
+  @Min(1000, { message: 'Repayment amount must be at least 1000' })
   @ApiProperty()
   amount: number;
 }
